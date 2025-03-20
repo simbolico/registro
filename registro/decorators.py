@@ -7,7 +7,7 @@ Registro resources, reducing boilerplate code and making the API more user-frien
 
 from typing import Optional, Any, Dict, Type
 from sqlmodel import Field
-from registro.core.resource_base import BaseResourceType
+from registro.core.resource_base import ResourceTypeBaseModel
 from registro.config import settings
 
 def resource(
@@ -56,9 +56,9 @@ def resource(
         if is_table:
             new_attrs["__tablename__"] = cls.__name__.lower()
 
-        # 4) Dynamically create a new class that inherits from BaseResourceType
+        # 4) Dynamically create a new class that inherits from ResourceTypeBaseModel
         #    (which already inherits from SQLModel).
-        Derived = type(cls.__name__, (BaseResourceType,), new_attrs)
+        Derived = type(cls.__name__, (ResourceTypeBaseModel,), new_attrs)
 
         # 5) Set the _service and _instance so that _create_resource picks them up
         Derived._service = service or settings.DEFAULT_SERVICE

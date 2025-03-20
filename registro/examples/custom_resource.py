@@ -57,7 +57,7 @@ from pydantic import field_validator, ValidationInfo
 try:
     # First try the direct decorator import
     from registro.decorators import resource
-    from registro import BaseResourceType, Resource
+    from registro import ResourceTypeBaseModel, Resource
     from registro.config import settings
     IMPORTS_OK = True
 except ImportError as e:
@@ -67,7 +67,7 @@ except ImportError as e:
     
     try:
         # Try package-level import as fallback
-        from registro import resource, BaseResourceType, Resource
+        from registro import ResourceTypeBaseModel, Resource
         from registro.config import settings
         IMPORTS_OK = True
     except ImportError as e:
@@ -98,7 +98,7 @@ class Product:
 
 For more advanced use cases, you can create a custom base class:
 
-1. Create a base class that extends `BaseResourceType`
+1. Create a base class that extends `ResourceTypeBaseModel`
 2. Define custom fields, validators, and methods
 3. Set the resource service and instance in `__init__`
 4. Define status values and other class-level configurations
@@ -137,7 +137,7 @@ if not hasattr(SimpleProduct, "__tablename__"):
 
 # APPROACH 2: Custom base class for advanced scenarios
 # Define a custom base class with extended functionality
-class InventoryItem(BaseResourceType, table=False):
+class InventoryItem(ResourceTypeBaseModel, table=False):
     """
     Base class for inventory items with custom status values.
     
@@ -151,7 +151,7 @@ class InventoryItem(BaseResourceType, table=False):
     """
     
     # Override status values - customize the allowed status values for your domain
-    # This replaces the default status values in BaseResourceType
+    # This replaces the default status values in ResourceTypeBaseModel
     __status_values__: ClassVar[Set[str]] = {
         "DRAFT",           # Item not yet ready for sale
         "IN_STOCK",        # Item available for purchase
@@ -331,8 +331,8 @@ This example shows how to create a resource for tracking inventory movements
 that references both Product and DigitalItem resources.
 """
 
-# APPROACH 2: Using BaseResourceType for relationships
-class InventoryMovement(BaseResourceType, table=True):
+# APPROACH 2: Using ResourceTypeBaseModel for relationships
+class InventoryMovement(ResourceTypeBaseModel, table=True):
     """
     Tracks movements of inventory items (additions, removals, adjustments).
     
@@ -590,11 +590,10 @@ When to use the @resource decorator:
 - When you don't need custom initialization logic
 - When you want cleaner, more concise code
 
-When to use BaseResourceType inheritance:
-- For resources with custom status values or business logic
-- When you need custom initialization or lifecycle hooks
-- When building a domain-specific base class for many resources
-- For more complex relationship management
+When to use ResourceTypeBaseModel inheritance:
+- For more direct control over the model structure
+- When running scripts directly rather than as modules
+- For class-level customization (like __status_values__ above)
 
 Both approaches provide the same core Registro capabilities, so choose the one
 that best fits your use case and coding style.

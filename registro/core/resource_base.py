@@ -7,7 +7,7 @@ enabling automatic Resource creation, validation, and relationship management.
 It implements:
 1. ResourceBaseModel: Abstract base for resource attributes and behavior
 2. ResourceRelationshipMixin: Provides relationship to Resource model
-3. BaseResourceType: Complete resource functionality for domain models
+3. ResourceTypeBaseModel: Complete resource functionality for domain models
 
 Key features:
 - Automatic Resource creation when instances are added to session
@@ -349,7 +349,7 @@ class ResourceRelationshipMixin:
             }
         )
 
-class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):
+class ResourceTypeBaseModel(ResourceBaseModel, ResourceRelationshipMixin, table=False):
     """
     Complete resource-based model combining all functionality.
     
@@ -357,7 +357,7 @@ class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False
     
     Example:
         ```python
-        class Product(BaseResourceType, table=True):
+        class Product(ResourceTypeBaseModel, table=True):
             __resource_type__ = "product"
             
             name: str = Field()
@@ -368,4 +368,4 @@ class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False
     pass
 
 # Types for type hints
-ResourceModelType = TypeVar('ResourceModelType', bound=BaseResourceType) 
+ResourceModelType = TypeVar('ResourceModelType', bound=ResourceTypeBaseModel) 

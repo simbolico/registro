@@ -1,146 +1,107 @@
 # Registro Examples
 
-This directory contains examples demonstrating different ways to use the Registro resource management framework. Each example showcases different features and integration patterns.
+Welcome to the Registro examples directory! This folder contains examples demonstrating various aspects of using Registro for resource management in Python applications.
 
-## Example Files
+### Example Files
 
-- **basic_usage.py**: Demonstrates the core functionality using both decorator and inheritance approaches
-- **alternative_basic_usage.py**: Shows the BaseResourceType inheritance pattern for resource definition
-- **custom_resource.py**: Shows how to create custom resource types with relationships between resources
-- **integration_example.py**: Demonstrates integrating Registro with FastAPI to build a RESTful API
+- **basic_usage.py**: Introductory example using the @resource decorator for resource definition
+- **alternative_basic_usage.py**: Shows the ResourceTypeBaseModel inheritance pattern for resource definition
+- **custom_resource.py**: Advanced examples with custom validators, status values, and relationships
+- **integration_example.py**: Demonstrates integrating Registro with FastAPI for building APIs
 
-## Running the Examples
+### Running the Examples
 
-To run the examples, execute them directly with Python from the repository root:
+To run any example, use Python from the project root:
 
 ```bash
-# Run basic usage example
-PYTHONPATH=/path/to/workspace python registro/examples/basic_usage.py
-
-# Run alternative basic usage example
-PYTHONPATH=/path/to/workspace python registro/examples/alternative_basic_usage.py
-
-# Run custom resource example
-PYTHONPATH=/path/to/workspace python registro/examples/custom_resource.py
-
-# Run integration example (requires FastAPI and uvicorn)
-PYTHONPATH=/path/to/workspace python registro/examples/integration_example.py
+python -m registro.examples.basic_usage
 ```
 
-## Example Features
+You can also run them directly if you've installed Registro:
 
-### basic_usage.py
+```bash
+cd registro/examples
+python basic_usage.py
+```
 
-Shows the fundamentals of Registro including:
-- Creating a Book resource model using the `@resource` decorator
-- Setting up a SQLite database for storing resources
-- Creating, querying, and working with resources
-- Reading resources by API name and other attributes
-- Working with resource relationships
+### Example Highlights
 
-### alternative_basic_usage.py
+#### Basic Usage Example
 
-Shows the same functionality as basic_usage.py but using the inheritance approach:
-- Creating a Book resource model by inheriting from `BaseResourceType`
-- Explicitly setting service and instance values
-- Benefit: More reliable when running scripts directly
+Learn the fundamentals of Registro:
 
-### custom_resource.py
+- Creating a simple Book resource using the `@resource` decorator
+- Working with resource identifiers (RIDs)
+- Querying resources
+- Understanding resource relationships
 
-Demonstrates more advanced features:
-- Creating related resources (Product, DigitalItem, InventoryMovement)
-- Setting up complex relationships between resources
-- Using foreign keys and SQLModel relationships
-- Adding custom validation with field validators
-- Supporting both decorator and inheritance approaches
+Example output:
+```
+Created: Book(rid=ri.bookshop.demo.book.01H7..., title='Book 1', author='Author 1')
+  RID: ri.bookshop.demo.book.01H7...
+  Service: bookshop
+  Resource Type: book
 
-### integration_example.py
+Found book by API name: Book(rid=ri.bookshop.demo.book.01H7..., title='Book 1', author='Author 1')
+```
 
-Shows how to integrate Registro with web frameworks:
-- Building a RESTful API with FastAPI
-- Creating API schemas with Pydantic models
-- Mapping between API requests and resource models
-- Implementing CRUD operations for resources
-- Handling resource validation in an API context
+#### Alternative Basic Usage
 
-## Decorator vs. Inheritance Approaches
+- Creating a Book resource model by inheriting from `ResourceTypeBaseModel`
+- Understanding the structure of resource identifiers
+- Working with SQLModel queries
+- Accessing the Resource registry
 
-Registro supports two approaches for creating resource models:
+#### Custom Resource Example
+
+Learn advanced Registro features:
+
+- Creating custom base classes for domain-specific resources
+- Implementing custom validation logic
+- Working with specialized status values
+- Managing relationships between different resource types
+- Extending the resource model with business logic
+
+Example code:
+```python
+class CustomResourceBase(ResourceTypeBaseModel, table=False):
+    """Abstract base for all custom resources"""
+    __status_values__ = {
+        "DRAFT", "ACTIVE", "ARCHIVED", "DEPRECATED"
+    }
+    
+    # Custom fields and methods...
+```
+
+#### Integration Example
+
+See how to integrate Registro with web frameworks:
+
+- Building a FastAPI application with Registro resources
+- Defining API endpoints for resource operations
+- Separating database models from API schemas
+- Implementing proper error handling
+
+### Choosing an Approach
+
+Registro offers two ways to create resources:
 
 1. **Decorator approach** (`@resource`):
-   - More concise and declarative
-   - Preferred for imported modules
+   - More concise and elegant code
+   - Less boilerplate
    - Example: `@resource(resource_type="book") class Book: ...`
 
-2. **Inheritance approach** (`BaseResourceType`):
-   - More explicit and traditional
-   - More reliable when running scripts directly
-   - Example: `class Book(BaseResourceType, table=True): __resource_type__ = "book" ...`
+2. **Inheritance approach** (`ResourceTypeBaseModel`):
+   - More explicit
+   - Works reliably when running scripts directly
+   - Example: `class Book(ResourceTypeBaseModel, table=True): __resource_type__ = "book" ...`
 
-The examples in this directory demonstrate both approaches, and some even implement conditional logic to use the appropriate approach based on how the file is being executed.
+Both approaches provide the same core functionality, so choose the one that best fits your coding style and requirements.
 
-## Common Patterns
+### Troubleshooting
 
-All examples demonstrate these common patterns:
+If you encounter issues with the decorator-based approach (`@resource`), try the inheritance-based alternative (`ResourceTypeBaseModel`). The inheritance approach may be more reliable in certain environments or when running scripts directly.
 
-1. **Resource Definition**: Creating models that represent resources
-2. **RID Generation**: Automatic generation of Resource Identifiers (RIDs)
-3. **Resource Querying**: Finding resources by RID, API name, or other attributes
-4. **Resource Relationships**: Handling references between resources
-5. **Resource Metadata**: Accessing and using resource metadata
+### Next Steps
 
-## Overview
-
-The examples demonstrate how to use Registro to:
-- Create and manage resources with unique identifiers
-- Build structured, maintainable, and scalable applications
-- Use both the decorator and inheritance-based approaches
-- Integrate with web frameworks like FastAPI
-
-## Key Features Demonstrated
-
-Across these examples, you'll see:
-
-1. **Using the @resource Decorator**:
-   ```python
-   @resource(resource_type="product")
-   class Product:
-       name: str = Field(...)
-       price: float = Field(...)
-   ```
-
-2. **Creating Custom Resource Types**:
-   ```python
-   class CustomResourceBase(BaseResourceType, table=False):
-       __status_values__ = {"DRAFT", "ACTIVE", "ARCHIVED"}
-       # Custom fields and methods...
-   ```
-
-3. **Working with Resource Relationships**:
-   - Foreign keys referencing other resources
-   - Relationship navigation
-   - Querying related resources
-
-4. **Status Management**:
-   - Custom status values
-   - Status transitions
-   - Business logic for status updates
-
-5. **RESTful API Design**:
-   - Resource-oriented endpoints
-   - Clean separation of database models and API schemas
-   - Consistent error handling
-
-## Best Practices
-
-These examples follow Registro best practices:
-- Resource-oriented design
-- Consistent naming conventions
-- Clear separation of concerns
-- Comprehensive documentation
-- Type hints for better IDE support
-- Descriptive error messages
-
-## Troubleshooting
-
-If you encounter issues with the decorator-based approach (`@resource`), try the inheritance-based alternative (`BaseResourceType`). The inheritance approach may be more reliable in certain environments or when running scripts directly. 
+After exploring these examples, you'll be ready to integrate Registro into your own applications. Check the main documentation for detailed API reference and advanced topics. 

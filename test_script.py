@@ -1,0 +1,1 @@
+from registro import ResourceTypeBaseModel; from sqlmodel import Field, SQLModel; class TestModel(ResourceTypeBaseModel, table=True): __resource_type__ = "test"; name: str = Field(); print(f"ResourceTypeBaseModel successfully imported"); print(f"TestModel.__resource_type__: {TestModel.__resource_type__}")

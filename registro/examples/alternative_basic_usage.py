@@ -8,14 +8,14 @@ in a simple application. It shows how to create, query, and manage resources wit
 setup, perfect for getting started with the library.
 
 ## What This Example Covers
-1. Creating a simple domain model with BaseResourceType (direct approach)
+1. Creating a simple domain model with ResourceTypeBaseModel (direct approach)
 2. Configuring the service name
 3. Creating database tables and storing resources
 4. Querying resources by various attributes
 5. Accessing resource metadata and relationships
 
 ## Key Concepts
-- **BaseResourceType**: The foundation class that adds resource capabilities to your models
+- **ResourceTypeBaseModel**: The foundation class that adds resource capabilities to your models
 - **RIDs (Resource Identifiers)**: Unique identifiers with a structured format
 - **Resource Registry**: Automatic tracking of all resources in a central registry
 - **Resource Metadata**: Service, instance, type, and other metadata accessible via properties
@@ -32,8 +32,17 @@ workspace_dir = parent_dir.parent
 sys.path.insert(0, str(workspace_dir))
 
 from sqlmodel import Field, Session, SQLModel, create_engine, select
-from registro import BaseResourceType, Resource
-from registro.config import settings
+import logging
+
+# Import Registro components
+try:
+    from registro import ResourceTypeBaseModel, Resource
+    from registro.config import settings
+except ImportError:
+    # Alternative imports if running from examples directory
+    sys.path.append(str(Path(__file__).parent.parent.parent))
+    from registro import ResourceTypeBaseModel, Resource
+    from registro.config import settings
 
 """
 ## Step 1: Configure Registro
@@ -54,7 +63,7 @@ settings.DEFAULT_INSTANCE = "demo"
 """
 ## Step 2: Define Resource Models
 
-Next, we define our domain models using BaseResourceType. This adds 
+Next, we define our domain models using ResourceTypeBaseModel. This adds 
 resource capabilities to our models, including:
 
 - Unique RIDs with format: ri.{service}.{instance}.{resource_type}.{id}
@@ -64,7 +73,7 @@ resource capabilities to our models, including:
 """
 
 # Define a Book model
-class Book(BaseResourceType, table=True):
+class Book(ResourceTypeBaseModel, table=True):
     """
     Book model with resource capabilities.
     
@@ -202,7 +211,7 @@ with Session(engine) as session:
 """
 ## Key Takeaways
 
-1. **BaseResourceType Inheritance**: This example shows the direct inheritance approach
+1. **ResourceTypeBaseModel Inheritance**: This example shows the direct inheritance approach
 2. **Unique Identifiers**: RIDs provide globally unique identifiers with built-in metadata
 3. **Automatic Registration**: Resources are automatically tracked in the registry
 4. **Metadata Access**: Access service, instance, and type information directly

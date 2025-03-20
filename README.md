@@ -11,7 +11,7 @@ Registro is a resource management framework for Python applications that provide
 ## Key Features
 
 - **Resource Identifiers (RIDs)**: Globally unique, structured identifiers (`ri.{service}.{instance}.{resource_type}.{id}`) for all resources
-- **Dual Implementation Approaches**: Support for both decorator-based (`@resource`) and inheritance-based (`BaseResourceType`) implementation
+- **Dual Implementation Approaches**: Support for both decorator-based (`@resource`) and inheritance-based (`ResourceTypeBaseModel`) implementation
 - **SQLModel Integration**: Seamless integration with SQLModel and SQLAlchemy for database operations
 - **Validation**: Field and pattern validation through Pydantic with customizable validators
 - **Type Safety**: Comprehensive type hints for improved IDE support and runtime type checking
@@ -39,13 +39,13 @@ Registro offers two implementation approaches: inheritance-based and decorator-b
 
 ### Inheritance Approach
 
-Extend `BaseResourceType` for explicit control and reliability when running scripts directly:
+Extend `ResourceTypeBaseModel` for explicit control and reliability when running scripts directly:
 
 ```python
-from registro import BaseResourceType
+from registro import ResourceTypeBaseModel
 from sqlmodel import Field, Session, SQLModel, create_engine
 
-class Book(BaseResourceType, table=True):
+class Book(ResourceTypeBaseModel, table=True):
     __resource_type__ = "book"
     
     # Define service and instance in __init__
@@ -136,7 +136,7 @@ with Session(engine) as session:
 ### Custom Status Values
 
 ```python
-class InventoryItem(BaseResourceType, table=False):
+class InventoryItem(ResourceTypeBaseModel, table=False):
     __status_values__ = {
         "DRAFT", "IN_STOCK", "LOW_STOCK", 
         "OUT_OF_STOCK", "DISCONTINUED"
@@ -155,7 +155,7 @@ class InventoryItem(BaseResourceType, table=False):
 ### Resource Relationships
 
 ```python
-class Order(BaseResourceType, table=True):
+class Order(ResourceTypeBaseModel, table=True):
     __resource_type__ = "order"
     
     # Foreign key to customer resource
@@ -172,7 +172,7 @@ class Order(BaseResourceType, table=True):
 ```python
 from pydantic import field_validator
 
-class Product(BaseResourceType, table=True):
+class Product(ResourceTypeBaseModel, table=True):
     __resource_type__ = "product"
     
     sku: str = Field(index=True)

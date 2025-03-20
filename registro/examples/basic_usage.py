@@ -38,7 +38,7 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 try:
     # First try the direct decorator import
     from registro.decorators import resource
-    from registro import Resource, BaseResourceType
+    from registro import Resource, ResourceTypeBaseModel
     
     # Import settings
     from registro.config import settings
@@ -52,7 +52,7 @@ except ImportError as e:
     
     try:
         # Try package-level import as fallback
-        from registro import resource, Resource, BaseResourceType
+        from registro import resource, Resource, ResourceTypeBaseModel
         from registro.config import settings
         IMPORTS_OK = True
     except ImportError as e:
@@ -87,7 +87,7 @@ resource capabilities to our models, including:
 - Automatic registration in the Resource registry
 - Metadata properties (service, instance, resource_type, etc.)
 
-The decorator automatically converts the class into a full SQLModel with BaseResourceType capabilities.
+The decorator automatically converts the class into a full SQLModel with ResourceTypeBaseModel capabilities.
 """
 
 # We'll define two variants of Book for maximum compatibility:
@@ -120,11 +120,11 @@ class DecoratedBook:
         return f"Book(rid={self.rid}, title='{self.title}', author='{self.author}')"
 
 # Method 2: Inheritance-based approach (works reliably when run directly)
-class InheritedBook(BaseResourceType, table=True):
+class InheritedBook(ResourceTypeBaseModel, table=True):
     """
     Book model with resource capabilities using the inheritance approach.
     
-    This version uses direct inheritance from BaseResourceType, which works
+    This version uses direct inheritance from ResourceTypeBaseModel, which works
     reliably when the file is run directly.
     """
     __resource_type__ = "book"
@@ -281,7 +281,7 @@ Registro provides two approaches for creating resources:
    - More concise and readable
    - Best when the file is imported as a module
 
-2. **Inheritance Approach**: `class Book(BaseResourceType, table=True):`
+2. **Inheritance Approach**: `class Book(ResourceTypeBaseModel, table=True):`
    - More explicit
    - Works reliably when running scripts directly
 
