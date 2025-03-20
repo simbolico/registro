@@ -35,6 +35,7 @@ from .models.patterns import (
     validate_string
 )
 from .resource import Resource
+from .config import settings
 import sqlalchemy.schema
 import logging
 
@@ -93,8 +94,8 @@ class ResourceBaseModel(DatabaseWithTimestampsModel, table=False):
         if instance.rid is not None:
             return
 
-        service = getattr(instance, '_service', 'ontology')
-        instance_name = getattr(instance, '_instance', 'main')
+        service = getattr(instance, '_service', settings.DEFAULT_SERVICE)
+        instance_name = getattr(instance, '_instance', settings.DEFAULT_INSTANCE)
         resource_type = instance.__class__.__resource_type__
 
         if not resource_type:

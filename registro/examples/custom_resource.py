@@ -41,36 +41,101 @@ You'll see how these components work together as we build an inventory managemen
 
 import os
 import sys
+from pathlib import Path
 
 # Add the base workspace directory to the Python path
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-workspace_dir = os.path.abspath(os.path.join(parent_dir, '..'))
-sys.path.insert(0, workspace_dir)
+current_dir = Path(__file__).parent
+parent_dir = current_dir.parent
+workspace_dir = parent_dir.parent
+sys.path.insert(0, str(workspace_dir))
 
 from typing import ClassVar, Set, Optional, List
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
 from pydantic import field_validator, ValidationInfo
-from registro import BaseResourceType, Resource
-from registro.config import settings
+
+# Import Registro components - try multiple approaches for resilience
+try:
+    # First try the direct decorator import
+    from registro.decorators import resource
+    from registro import BaseResourceType, Resource
+    from registro.config import settings
+    IMPORTS_OK = True
+except ImportError as e:
+    print(f"Warning: Error importing Registro modules: {e}")
+    print("Will try alternative import approach...")
+    IMPORTS_OK = False
+    
+    try:
+        # Try package-level import as fallback
+        from registro import resource, BaseResourceType, Resource
+        from registro.config import settings
+        IMPORTS_OK = True
+    except ImportError as e:
+        print(f"Error: Failed to import Registro modules: {e}")
+        print("This example requires the Registro package.")
+        sys.exit(1)
 
 """
 ## Creating a Base Resource Type
 
-To create custom resources with Registro, you typically:
+Registro provides two ways to create resources:
+
+### 1. Simple Approach with @resource Decorator
+
+The simplest approach is to use the `@resource` decorator:
+
+```python
+from registro import resource
+from sqlmodel import Field
+
+@resource(resource_type="product", service="inventory", instance="store")
+class Product:
+    name: str = Field(...)
+    price: float = Field(...)
+```
+
+### 2. Advanced Approach with Custom Base Class
+
+For more advanced use cases, you can create a custom base class:
 
 1. Create a base class that extends `BaseResourceType`
 2. Define custom fields, validators, and methods
 3. Set the resource service and instance in `__init__`
 4. Define status values and other class-level configurations
 
-The example below shows how to create an inventory management system with:
-- A base class for all inventory items with custom status values
-- Product and DigitalItem resource types extending the base class
-- InventoryMovement resource type for tracking stock changes
-
-This pattern allows you to create a domain-specific resource hierarchy.
+The example below shows both approaches in an inventory management system.
 """
 
+# APPROACH 1: Using the @resource decorator for simple cases
+@resource(
+    resource_type="simple-product",
+    service="inventory",
+    instance="store"
+)
+class SimpleProduct:
+    """
+    Simple product defined using the @resource decorator.
+    
+    This approach is perfect for straightforward cases where you just need to
+    define fields without extensive customization.
+    """
+    name: str = Field(index=True)
+    price: float = Field(default=0.0)
+    stock_quantity: int = Field(default=0)
+    
+    @field_validator("price")
+    @classmethod
+    def validate_price(cls, v):
+        """Ensure price is positive."""
+        if v < 0:
+            raise ValueError("Price cannot be negative")
+        return round(v, 2)  # Round to 2 decimal places
+
+# Ensure class has been properly transformed
+if not hasattr(SimpleProduct, "__tablename__"):
+    raise RuntimeError("SimpleProduct was not properly decorated")
+
+# APPROACH 2: Custom base class for advanced scenarios
 # Define a custom base class with extended functionality
 class InventoryItem(BaseResourceType, table=False):
     """
@@ -266,7 +331,7 @@ This example shows how to create a resource for tracking inventory movements
 that references both Product and DigitalItem resources.
 """
 
-# Create a model for tracking inventory movements
+# APPROACH 2: Using BaseResourceType for relationships
 class InventoryMovement(BaseResourceType, table=True):
     """
     Tracks movements of inventory items (additions, removals, adjustments).
@@ -325,244 +390,214 @@ class InventoryMovement(BaseResourceType, table=True):
             raise ValueError(f"Movement type must be one of {allowed}")
         return v
 
+# APPROACH 1: Using @resource decorator for relationships
+@resource(
+    resource_type="inventory-movement",
+    service="inventory",
+    instance="store"
+)
+class DecoratedInventoryMovement:
+    """
+    Tracks movements of inventory items using the @resource decorator approach.
+    
+    This resource:
+    - Uses the decorator to set service, instance and resource type
+    - References other resources via their RIDs (foreign keys)
+    - Establishes relationships for easy navigation
+    - Defines type-specific validation
+    
+    Example RID: ri.inventory.store.inventory-movement.01ABC123456789
+    """
+    # Foreign key references to other resources (using their RIDs)
+    product_rid: Optional[str] = Field(default=None, foreign_key="product.rid")
+    digital_item_rid: Optional[str] = Field(default=None, foreign_key="digitalitem.rid")
+    
+    # Movement details
+    quantity: int = Field(default=1)
+    movement_type: str = Field(default="ADDITION")  # ADDITION, REMOVAL, ADJUSTMENT
+    
+    # Define relationships for easy navigation between related resources
+    product: Optional[Product] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[DecoratedInventoryMovement.product_rid]"}
+    )
+    digital_item: Optional[DigitalItem] = Relationship(
+        sa_relationship_kwargs={"foreign_keys": "[DecoratedInventoryMovement.digital_item_rid]"}
+    )
+    
+    @field_validator("movement_type")
+    @classmethod
+    def validate_movement_type(cls, v):
+        """
+        Ensure movement type is valid.
+        
+        Validates that the movement type is one of the allowed values:
+        - ADDITION: Add stock
+        - REMOVAL: Remove stock
+        - ADJUSTMENT: Correct inventory count
+        - RESERVATION: Hold inventory for a customer
+        """
+        allowed = {"ADDITION", "REMOVAL", "ADJUSTMENT", "RESERVATION"}
+        v = v.upper()
+        if v not in allowed:
+            raise ValueError(f"Movement type must be one of {allowed}")
+        return v
+
+# Ensure class has been properly transformed
+if not hasattr(DecoratedInventoryMovement, "__tablename__"):
+    print("Warning: DecoratedInventoryMovement was not properly transformed")
+
+# Choose which InventoryMovementNew class to use based on how the file is executed
+if __name__ == "__main__":
+    # When running directly, use the inheritance-based version 
+    print("Using inheritance-based InventoryMovementNew for direct execution")
+    # Just use the already defined InventoryMovement class which uses inheritance
+    InventoryMovementNew = InventoryMovement
+else:
+    # When imported, use the decorator-based version if it worked
+    if hasattr(DecoratedInventoryMovement, "__tablename__") and hasattr(DecoratedInventoryMovement, "_sa_registry"):
+        print("Using decorator-based InventoryMovementNew")
+        InventoryMovementNew = DecoratedInventoryMovement
+    else:
+        print("Falling back to inheritance-based InventoryMovementNew")
+        InventoryMovementNew = InventoryMovement
 
 """
-## Database Setup and Resource Creation
+## Working with Resources in Code
 
-Registro works with SQLModel (and SQLAlchemy) for database integration.
-This section demonstrates:
-
-1. Setting up a database
-2. Creating resource instances
-3. Saving resources to the database
-4. Working with relationships
-5. Implementing business logic
+Now that we've defined our resource types, let's see how to use them in practice.
+This example demonstrates creating database tables, adding resources, and querying
+related resources using Registro's powerful features.
 """
 
-# Create database
-sqlite_file = "inventory.db"
-if os.path.exists(sqlite_file):
-    os.remove(sqlite_file)
-
-engine = create_engine(f"sqlite:///{sqlite_file}", echo=False)  # Set echo=False to reduce output
+# Database setup
+engine = create_engine("sqlite:///:memory:", echo=False)
 SQLModel.metadata.create_all(engine)
 
-# Create and save inventory items
+# Create instances and relationships
 with Session(engine) as session:
-    # Create physical products
-    products = [
-        Product(
-            api_name=f"product{i}",           # Machine-readable name
-            display_name=f"Product {i}",       # Human-readable name
-            sku=f"PRD-{i:04d}",                # Stock Keeping Unit
-            price=10.99 + i * 5.25,            # Price in currency
-            stock_quantity=20 - i,             # Initial stock level
-            weight=0.5 + i * 0.25,             # Weight in kg
-            dimensions=f"{10+i}x{5+i}x{2+i}"   # Dimensions in cm (LxWxH)
-        )
-        for i in range(1, 4)
-    ]
+    # Create a physical product
+    laptop = Product(
+        api_name="macbook-pro",
+        display_name="MacBook Pro",
+        sku="MBPRO-2023",
+        price=1999.00,
+        stock_quantity=10,
+        weight=2.1,
+        dimensions="31.26 x 22.12 x 1.55 cm"
+    )
+    session.add(laptop)
     
-    # Create digital items
-    digital_items = [
-        DigitalItem(
-            api_name=f"digitalItem{i}",                       # Machine-readable name
-            display_name=f"Digital Item {i}",                 # Human-readable name
-            sku=f"DIG-{i:04d}",                               # Stock Keeping Unit
-            price=5.99 + i * 2.00,                            # Price in currency
-            stock_quantity=999,                               # High stock (digital)
-            file_size=10.5 + i * 20.5,                        # Size in MB
-            download_url=f"https://example.com/downloads/item{i}"  # Download URL
-        )
-        for i in range(1, 3)
-    ]
+    # Create a digital item
+    software = DigitalItem(
+        api_name="photoshop",
+        display_name="Adobe Photoshop",
+        sku="PS-2023",
+        price=20.99,
+        stock_quantity=999,  # Digital goods often have large quantities
+        file_size=2500.0,  # 2.5 GB
+        download_url="https://example.com/downloads/photoshop"
+    )
+    session.add(software)
     
-    # Add to session and commit
-    session.add_all(products)
-    session.add_all(digital_items)
+    # Commit to generate RIDs
     session.commit()
     
-    # Apply business logic - update statuses based on stock
-    for product in products:
-        session.refresh(product)  # Refresh to get the generated RID
-        product.update_status_from_stock()  # Update status based on stock quantity
+    # Create inventory movements for both items
+    laptop_addition = InventoryMovement(
+        api_name="laptop-initial-stock",
+        display_name="Initial stock addition for MacBook Pro",
+        product_rid=laptop.rid,
+        quantity=10,
+        movement_type="ADDITION"
+    )
     
+    software_addition = InventoryMovementNew(
+        api_name="software-initial-stock",
+        display_name="Initial stock addition for Photoshop",
+        digital_item_rid=software.rid,
+        quantity=999,
+        movement_type="ADDITION"
+    )
+    
+    session.add(laptop_addition)
+    session.add(software_addition)
     session.commit()
     
-    """
-    ## Working with Relationships
-    
-    Here we create InventoryMovement resources that reference products and digital items.
-    These movements affect the stock levels of the referenced items and demonstrate:
-    
-    1. Creating resources with foreign key references
-    2. Accessing related resources via relationships
-    3. Implementing cross-resource business logic
-    """
-    
-    # Create some inventory movements
-    movements = [
-        # Add stock to product 1
-        InventoryMovement(
-            api_name="addStock",
-            display_name="Add Stock to Product 1",
-            product_rid=products[0].rid,  # Reference to a Product resource by RID
-            quantity=5,
-            movement_type="ADDITION"
-        ),
-        # Remove stock from product 2
-        InventoryMovement(
-            api_name="removeStock",
-            display_name="Remove Stock from Product 2",
-            product_rid=products[1].rid,  # Reference to a Product resource by RID
-            quantity=2,
-            movement_type="REMOVAL"
-        ),
-        # Digital item movement (download)
-        InventoryMovement(
-            api_name="downloadItem",
-            display_name="Download Digital Item 1",
-            digital_item_rid=digital_items[0].rid,  # Reference to a DigitalItem resource by RID
-            quantity=1,
-            movement_type="REMOVAL"  # Track downloads as removals
-        )
-    ]
-    
-    session.add_all(movements)
-    session.commit()
-    
-    """
-    ## Implementing Business Logic
-    
-    This section demonstrates how to implement domain-specific business logic
-    that spans multiple resources:
-    
-    1. Update product stock based on movements
-    2. Apply status changes based on new stock levels
-    3. Use relationships to navigate between resources
-    """
-    
-    # Update product stock based on movements
-    for movement in movements:
-        session.refresh(movement)  # Refresh to load relationships
-        
-        # Handle product stock updates
-        if movement.product_rid:
-            product = movement.product  # Access via relationship
-            
-            # Apply business rules based on movement type
-            if movement.movement_type == "ADDITION":
-                product.stock_quantity += movement.quantity
-            elif movement.movement_type == "REMOVAL":
-                product.stock_quantity = max(0, product.stock_quantity - movement.quantity)
-            
-            # Update status based on new stock level
-            product.update_status_from_stock()
-    
-    session.commit()
-
-"""
-## Querying Resources
-
-Registro works seamlessly with SQLModel for querying resources.
-This section demonstrates:
-
-1. Querying specific resource types
-2. Accessing related resources
-3. Using resource properties
-4. Working with the Resource registry
-"""
-
-# Query inventory
-with Session(engine) as session:
-    # Get all products
+    # Query and display resources
+    print("\nProduct Resources:")
     products = session.exec(select(Product)).all()
-    print("Physical Products:")
     for product in products:
-        print(f"  {product.display_name} - SKU: {product.sku}, Price: ${product.price:.2f}")
-        print(f"    Status: {product.status}, Stock: {product.stock_quantity}")
-        print(f"    RID: {product.rid}")  # Resource Identifier (RID)
-        print()
-    
-    # Get all digital items
+        print(f"- {product.display_name} (RID: {product.rid})")
+        print(f"  SKU: {product.sku}, Price: ${product.price}, Stock: {product.stock_quantity}")
+        print(f"  Weight: {product.weight} kg, Dimensions: {product.dimensions}")
+        
+    print("\nDigital Item Resources:")
     digital_items = session.exec(select(DigitalItem)).all()
-    print("Digital Items:")
     for item in digital_items:
-        print(f"  {item.display_name} - SKU: {item.sku}, Price: ${item.price:.2f}")
-        print(f"    File Size: {item.file_size} MB")
-        print(f"    RID: {item.rid}")  # Resource Identifier (RID)
-        print()
+        print(f"- {item.display_name} (RID: {item.rid})")
+        print(f"  SKU: {item.sku}, Price: ${item.price}, Stock: {item.stock_quantity}")
+        print(f"  File Size: {item.file_size} MB, URL: {item.download_url}")
     
-    # Get all inventory movements with their relationships
+    print("\nInventory Movements:")
     movements = session.exec(
         select(InventoryMovement)
     ).all()
-    
-    print("Inventory Movements:")
     for movement in movements:
-        # Use relationships to access related resources
-        item_info = ""
-        if movement.product:
-            item_info = f"Product: {movement.product.display_name}"
-        elif movement.digital_item:
-            item_info = f"Digital Item: {movement.digital_item.display_name}"
+        print(f"- {movement.display_name} (RID: {movement.rid})")
+        print(f"  Type: {movement.movement_type}, Quantity: {movement.quantity}")
         
-        print(f"  {movement.display_name} - {movement.movement_type}, Quantity: {movement.quantity}")
-        print(f"    {item_info}")
-        print(f"    RID: {movement.rid}")  # Resource Identifier (RID)
-        print()
+        # Access the related product
+        if movement.product_rid:
+            product = session.exec(select(Product).where(
+                Product.rid == movement.product_rid
+            )).one()
+            print(f"  For Product: {product.display_name} (SKU: {product.sku})")
+        
+        # Access the related digital item
+        if movement.digital_item_rid:
+            digital_item = session.exec(select(DigitalItem).where(
+                DigitalItem.rid == movement.digital_item_rid
+            )).one()
+            print(f"  For Digital Item: {digital_item.display_name} (SKU: {digital_item.sku})")
     
-    """
-    ## Resource Registry
-    
-    All resources are automatically registered in the Resource table,
-    allowing you to query them regardless of their specific type.
-    This provides a unified view of all resources in your system.
-    """
-    
-    # Query for all resources in the registry
-    resources = session.exec(
-        select(Resource).order_by(Resource.resource_type)
+    print("\nInventory Movements (New Approach with Decorator):")
+    new_movements = session.exec(
+        select(InventoryMovementNew)
     ).all()
+    for movement in new_movements:
+        print(f"- {movement.display_name} (RID: {movement.rid})")
+        print(f"  Type: {movement.movement_type}, Quantity: {movement.quantity}")
+        
+        # Access the related digital item
+        if movement.digital_item_rid:
+            digital_item = session.exec(select(DigitalItem).where(
+                DigitalItem.rid == movement.digital_item_rid
+            )).one()
+            print(f"  For Digital Item: {digital_item.display_name} (SKU: {digital_item.sku})")
     
-    # Count resources by type
-    resource_types = {}
+    # Query from the Resource registry
+    print("\nAll Resources in Registry:")
+    resources = session.exec(select(Resource)).all()
     for resource in resources:
-        if resource.resource_type not in resource_types:
-            resource_types[resource.resource_type] = 0
-        resource_types[resource.resource_type] += 1
-    
-    print("Resource Summary:")
-    for resource_type, count in resource_types.items():
-        print(f"  {resource_type}: {count} resources")
+        print(f"- {resource.rid}")
+        print(f"  Type: {resource.resource_type}, Created: {resource.created_at}")
 
 """
-## Best Practices for Using Registro
+## Choosing Between Decorator and Inheritance
 
-1. **Resource Organization**:
-   - Group related resources under the same service
-   - Use meaningful instance names for different deployments
-   - Create base classes for resource families with shared behavior
+When to use the @resource decorator:
+- For simpler resources with standard status values
+- When you don't need custom initialization logic
+- When you want cleaner, more concise code
 
-2. **Resource Identification**:
-   - Use descriptive resource types
-   - Choose meaningful api_names and display_names
-   - Let Registro handle RID generation
+When to use BaseResourceType inheritance:
+- For resources with custom status values or business logic
+- When you need custom initialization or lifecycle hooks
+- When building a domain-specific base class for many resources
+- For more complex relationship management
 
-3. **Validation**:
-   - Add field validators for all critical fields
-   - Use custom status values appropriate to your domain
-   - Implement business logic methods that enforce constraints
-
-4. **Relationships**:
-   - Use SQLModel relationships for navigating between resources
-   - Reference resources by their RIDs in foreign keys
-   - Maintain referential integrity in your business logic
-
-5. **Domain-Driven Design**:
-   - Model your resources based on your domain concepts
-   - Implement domain-specific behavior in resource methods
-   - Use Registro to maintain consistent resource identification across domains
+Both approaches provide the same core Registro capabilities, so choose the one
+that best fits your use case and coding style.
 """
 
 print("\nCustom resource example completed successfully!")

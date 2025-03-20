@@ -1,37 +1,29 @@
 """
-Registro: Resource-based model system for SQLModel
-==================================================
+Registro - A resource management framework for Python.
 
-Registro provides a resource-based approach to SQLModel, offering:
+Registro provides a consistent way to create, access, and manage resources
+in your application. It generates structured resource identifiers (RIDs)
+that uniquely identify resources across services and instances.
 
-- Resource identifiers (RIDs) for globally unique identification
-- Automatic resource creation and relationship management
-- Validation and pattern enforcement
-- Integration with SQLModel and Pydantic v2
-
-Basic usage:
-
-```python
-from registro import Resource, BaseResourceType
-from sqlmodel import SQLModel, Field
-
-class MyModel(BaseResourceType, table=True):
-    __resource_type__ = "my-model"
-    
-    name: str = Field(default="")
-    value: int = Field(default=0)
-```
+Core Components:
+- BaseResourceType: Base class for creating resource types
+- Resource: Central registry for all resources
+- @resource: Decorator for creating resources
 """
 
+# Version
 __version__ = "0.1.0"
 
-# Export core classes
+# Core exports
+from registro.core.resource_base import BaseResourceType
 from registro.core.resource import Resource
-from registro.core.resource_base import BaseResourceType, ResourceBaseModel
 
-# Make these accessible at the package level
+# Decorators
+from registro.decorators import resource
+
+# Make isort happy
 __all__ = [
-    "Resource",
     "BaseResourceType",
-    "ResourceBaseModel",
+    "Resource",
+    "resource",
 ]

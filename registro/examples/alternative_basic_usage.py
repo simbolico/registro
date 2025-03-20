@@ -1,6 +1,6 @@
 """
-# Registro Basic Usage Example
-# ===========================
+# Registro Alternative Basic Usage Example
+# =======================================
 
 ## Overview
 This example demonstrates the fundamental concepts of using Registro for managing resources
@@ -8,14 +8,14 @@ in a simple application. It shows how to create, query, and manage resources wit
 setup, perfect for getting started with the library.
 
 ## What This Example Covers
-1. Creating a simple domain model with the @resource decorator
+1. Creating a simple domain model with BaseResourceType (direct approach)
 2. Configuring the service name
 3. Creating database tables and storing resources
 4. Querying resources by various attributes
 5. Accessing resource metadata and relationships
 
 ## Key Concepts
-- **@resource Decorator**: The easiest way to add resource capabilities to your models
+- **BaseResourceType**: The foundation class that adds resource capabilities to your models
 - **RIDs (Resource Identifiers)**: Unique identifiers with a structured format
 - **Resource Registry**: Automatic tracking of all resources in a central registry
 - **Resource Metadata**: Service, instance, type, and other metadata accessible via properties
@@ -31,34 +31,9 @@ parent_dir = current_dir.parent
 workspace_dir = parent_dir.parent
 sys.path.insert(0, str(workspace_dir))
 
-# Import SQLModel components
 from sqlmodel import Field, Session, SQLModel, create_engine, select
-
-# Import Registro components - try multiple approaches for resilience
-try:
-    # First try the direct decorator import
-    from registro.decorators import resource
-    from registro import Resource, BaseResourceType
-    
-    # Import settings
-    from registro.config import settings
-    
-    # Set up basic module-level flag to check if imports succeeded
-    IMPORTS_OK = True
-except ImportError as e:
-    print(f"Warning: Error importing Registro modules: {e}")
-    print("Will try alternative import approach...")
-    IMPORTS_OK = False
-    
-    try:
-        # Try package-level import as fallback
-        from registro import resource, Resource, BaseResourceType
-        from registro.config import settings
-        IMPORTS_OK = True
-    except ImportError as e:
-        print(f"Error: Failed to import Registro modules: {e}")
-        print("This example requires the Registro package.")
-        sys.exit(1)
+from registro import BaseResourceType, Resource
+from registro.config import settings
 
 """
 ## Step 1: Configure Registro
@@ -79,26 +54,19 @@ settings.DEFAULT_INSTANCE = "demo"
 """
 ## Step 2: Define Resource Models
 
-Next, we define our domain models using the @resource decorator. This adds 
+Next, we define our domain models using BaseResourceType. This adds 
 resource capabilities to our models, including:
 
 - Unique RIDs with format: ri.{service}.{instance}.{resource_type}.{id}
 - Status tracking
 - Automatic registration in the Resource registry
 - Metadata properties (service, instance, resource_type, etc.)
-
-The decorator automatically converts the class into a full SQLModel with BaseResourceType capabilities.
 """
 
-# We'll define two variants of Book for maximum compatibility:
-# 1. A decorator-based version for when the file is imported
-# 2. An inheritance-based version for when the file is run directly
-
-# Method 1: Decorator-based approach (works best when imported)
-@resource(resource_type="book")
-class DecoratedBook:
+# Define a Book model
+class Book(BaseResourceType, table=True):
     """
-    Book model with resource capabilities using the decorator approach.
+    Book model with resource capabilities.
     
     This model represents books in our bookshop system. Each book automatically
     becomes a resource with a unique RID when created.
@@ -109,6 +77,9 @@ class DecoratedBook:
         year (int): Publication year
         pages (int): Number of pages
     """
+    # Define the resource type - this becomes part of the RID
+    __resource_type__ = "book"
+    
     # Define model fields
     title: str = Field(index=True)
     author: str = Field(index=True)
@@ -119,42 +90,6 @@ class DecoratedBook:
         """String representation of a Book."""
         return f"Book(rid={self.rid}, title='{self.title}', author='{self.author}')"
 
-# Method 2: Inheritance-based approach (works reliably when run directly)
-class InheritedBook(BaseResourceType, table=True):
-    """
-    Book model with resource capabilities using the inheritance approach.
-    
-    This version uses direct inheritance from BaseResourceType, which works
-    reliably when the file is run directly.
-    """
-    __resource_type__ = "book"
-    
-    # Define model fields (same as DecoratedBook)
-    title: str = Field(index=True)
-    author: str = Field(index=True)
-    year: int = Field(default=2023)
-    pages: int = Field(default=0)
-    
-    def __repr__(self):
-        """String representation of a Book."""
-        return f"Book(rid={self.rid}, title='{self.title}', author='{self.author}')"
-
-# Choose which Book class to use based on whether we're running directly
-# or being imported, and based on whether the decorator worked properly
-if __name__ == "__main__":
-    # When running directly, use the inheritance-based version to avoid SQLAlchemy mapping issues
-    Book = InheritedBook
-    print("Using inheritance-based Book for direct execution")
-else:
-    # When imported, use the decorator-based version (more idiomatic)
-    # But first verify that the decorator worked properly
-    if hasattr(DecoratedBook, "__tablename__") and hasattr(DecoratedBook, "_sa_registry"):
-        Book = DecoratedBook
-        print("Using decorator-based Book")
-    else:
-        Book = InheritedBook
-        print("Falling back to inheritance-based Book")
-
 """
 ## Step 3: Set Up the Database
 
@@ -163,7 +98,7 @@ SQLModel, which is built on SQLAlchemy, providing a powerful yet easy-to-use ORM
 """
 
 # Create a SQLite database
-sqlite_file = "bookshop.db"
+sqlite_file = "bookshop_alt.db"
 if os.path.exists(sqlite_file):
     os.remove(sqlite_file)
 
@@ -267,32 +202,17 @@ with Session(engine) as session:
 """
 ## Key Takeaways
 
-1. **@resource Decorator**: Easily transform any class into a full-fledged resource model
+1. **BaseResourceType Inheritance**: This example shows the direct inheritance approach
 2. **Unique Identifiers**: RIDs provide globally unique identifiers with built-in metadata
 3. **Automatic Registration**: Resources are automatically tracked in the registry
 4. **Metadata Access**: Access service, instance, and type information directly
 5. **Query Flexibility**: Query by model attributes or resource properties
 
-## Note on Implementation Approaches
-
-Registro provides two approaches for creating resources:
-
-1. **Decorator Approach**: `@resource(resource_type="book")`
-   - More concise and readable
-   - Best when the file is imported as a module
-
-2. **Inheritance Approach**: `class Book(BaseResourceType, table=True):`
-   - More explicit
-   - Works reliably when running scripts directly
-
-This example demonstrates both approaches and selects the appropriate one
-based on how the file is being used.
-
 ## Next Steps
 
-- Check out the `custom_resource.py` example for creating custom status values and validators
-- See `integration_example.py` for using Registro with FastAPI
-- Explore advanced features like relationships between different resource types
+- Compare this with the decorator approach in basic_usage.py
+- Check out custom_resource.py for custom status values and validators
+- See integration_example.py for using Registro with FastAPI
 """
 
-print("\nBasic usage example completed successfully!")
+print("\nAlternative basic usage example completed successfully!") 
