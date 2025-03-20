@@ -2325,7 +2325,792 @@ jobs:
       matrix:
         python-version: [3.8, 3.9, '3.10']
     steps:
-    
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+    - uses: astral-sh/setup-rye@v1
+    - run: rye sync
+    - run: rye run pytest --cov=registro
+```
+
+## 6. Publish to PyPI
+
+```bash
+# Build the package
+rye build
+
+# Test on TestPyPI first
+rye publish --repository testpypi
+
+# Once verified, publish to PyPI
+rye publish
+```
+
+## 7. Set Up Documentation Hosting
+
+Configure Read the Docs by:
+1. Register on readthedocs.org
+2. Connect your GitHub repository
+3. Configure build settings to use your docs directory
+
+## 8. Release Management
+
+1. Use semantic versioning (MAJOR.MINOR.PATCH)
+2. Update version in pyproject.toml
+3. Create GitHub releases with detailed changelogs
+4. Tag releases with git tags
+
+This approach provides a professional publishing pipeline with automated testing, documentation, and distribution.
+
+---
+
+_**User**_
+
+can you help me rename the ResourceBase to BaseResourceType in the entire codebase (including documentation)?
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+I'll help you rename `ResourceBase` to `BaseResourceType` throughout the codebase. Let's start by finding all occurrences of `ResourceBase`:
+
+---
+
+<details>
+            <summary>Searched codebase "ResourceBase" • **25** results</summary>
+        
+| File | Lines |
+|------|-------|
+| `registro/core/resource_base.py` | L178-232 |
+| `registro/core/resource_base.py` | L350-368 |
+| `registro/core/resource_base.py` | L42-102 |
+| `registro/resource_based.py` | L41-82 |
+| `registro/core/resource_base.py` | L102-130 |
+| `registro/resource_based.py` | L137-191 |
+| `registro/resource_based.py` | L207-215 |
+| `registro/core/__init__.py` | L1-24 |
+| `registro/core/resource_base.py` | L272-327 |
+| `registro/core/resource_base.py` | L1-42 |
+| `registro/core/resource_base.py` | L130-178 |
+| `registro/resource_based.py` | L82-137 |
+| `registro/resource_based.py` | L1-41 |
+| `registro/core/resource_base.py` | L232-272 |
+| `registro/core/resource_base.py` | L368-371 |
+| `registro/resource.py` | L18-61 |
+| `registro/core/resource_base.py` | L327-350 |
+| `registro/examples/custom_resource.py` | L43-72 |
+| `registro/core/resource.py` | L31-71 |
+| `registro/core/resource.py` | L128-152 |
+| `registro/resource_based.py` | L191-207 |
+| `registro/examples/custom_resource.py` | L72-101 |
+| `registro/examples/custom_resource.py` | L101-156 |
+| `registro/__init__.py` | L1-37 |
+| `registro/core/resource.py` | L71-128 |
+
+</details>
+
+---
+
+Let's also check for imports and usages of `ResourceBase` in other files:
+
+---
+
+<details>
+            <summary>Grep search for "ResourceBase" • **11** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/README.md` | L32 | `from registro import Resource, ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/README.md` | L36 | `class Book(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/integration_example.py` | L18 | `- **ResourceBase Integration**: Using Registro models in FastAPI endpoints` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/integration_example.py` | L36 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/integration_example.py` | L92 | `Next, we define our domain models by extending ResourceBase. This adds resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/integration_example.py` | L99 | `class Task(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/integration_example.py` | L499 | `- Separate database models (ResourceBase) from API schemas` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/custom_resource.py` | L52 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/custom_resource.py` | L60 | `1. Create a base class that extends `ResourceBase`` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/custom_resource.py` | L74 | `class InventoryItem(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/custom_resource.py` | L88 | `# This replaces the default status values in ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/custom_resource.py` | L269 | `class InventoryMovement(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/basic_usage.py` | L10 | `1. Creating a simple domain model with ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/basic_usage.py` | L17 | `- **ResourceBase**: The foundation class that adds resource capabilities to your models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/basic_usage.py` | L32 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/basic_usage.py` | L53 | `Next, we define our domain models by extending the ResourceBase class. This adds` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/basic_usage.py` | L65 | `class Book(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/examples/basic_usage.py` | L202 | `1. **ResourceBase Integration**: Easily add resource capabilities to any model` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L7 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L9 | `3. ResourceBase: Complete resource functionality for domain models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L41 | `T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L43 | `class ResourceBaseModel(TimestampedModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L330 | `Mixin class to provide the 'resource' relationship to ResourceBaseModel.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L351 | `class ResourceBase(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L359 | `class Product(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L370 | `ResourceModelType = TypeVar('ResourceModelType', bound=ResourceBase)` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L5 | `- ResourceBase: Base class for domain models with resource capabilities` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L6 | `- ResourceBaseModel: Abstract base for resource models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L11 | `ResourceBase,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L12 | `ResourceBaseModel,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L19 | `"ResourceBase",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L20 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L8 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L10 | `3. ResourceBase: Combines the above for complete resource functionality` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L43 | `class ResourceBaseModel(DatabaseWithTimestampsModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L196 | `subclasses of ResourceBaseModel using SQLModel's Relationship V2.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L209 | `class ResourceTypeBaseModel(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L211 | `Intermediate base class combining ResourceBaseModel and ResourceRelationshipMixin.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L14 | `from registro import Resource, ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L17 | `class MyModel(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L29 | `from registro.core.resource_base import ResourceBase, ResourceBaseModel` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L34 | `"ResourceBase",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L35 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L21 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L28 | `class InventoryItem(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L64 | `Let's try a different approach with the standard naming pattern used in the ResourceBase class:` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L69 | `<summary>Searched codebase "ResourceBase service definition" • **25** results</summary>` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L233 | `⟪ 129 characters skipped ⟫ This is the correct attribute that the ResourceBase implementation looks for when generating RIDs.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L484 | `<summary>Searched codebase "ResourceBase service and instance" • **25** results</summary>` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L523 | `<summary>Searched codebase "ResourceBaseModel creating resource instance service" • **25** results</summary>` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L628 | `class InventoryItem(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L824 | `class Item (ResourceBase(service="inventory", instance="store", etc etc)):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L837 | `Unfortunately, you can't pass parameters directly in the class inheritance declaration like that in Python. The syntax you suggested (`ResourceBase(service="inventory", instance="store")`) would try to create an instance of ResourceBase rather than a subclass.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L844 | `class Item(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L853 | `class InventoryResourceBase(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L864 | `class Item(InventoryResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L919 | `- 3. Extending ResourceBase with additional functionality` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L939 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L947 | `+ 1. Create a base class that extends `ResourceBase`` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L961 | `class InventoryItem(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L977 | `+     # This replaces the default status values in ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1141 | `class InventoryMovement(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1474 | `1. Creating a simple domain model with ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1484 | `+ - **ResourceBase**: The foundation class that adds resource capabilities to your models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1512 | `+ Next, we define our domain models by extending the ResourceBase class. This adds` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1524 | `class Book(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1642 | `+ 1. **ResourceBase Integration**: Easily add resource capabilities to any model` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1683 | `- 2. Creating database models with ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1703 | `+ - **ResourceBase Integration**: Using Registro models in FastAPI endpoints` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1723 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1807 | `+ Next, we define our domain models by extending ResourceBase. This adds resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1814 | `class Task(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L2175 | `+    - Separate database models (ResourceBase) from API schemas` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L320 | `+ from registro import Resource, ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L323 | `+ class MyModel(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L335 | `+ from registro.core.resource_base import ResourceBase, ResourceBaseModel` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L340 | `+     "ResourceBase",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L341 | `+     "ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L386 | `+ from registro import Resource, ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L390 | `+ class Book(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1562 | `Finally, let's implement the ResourceBase model:` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1575 | `+ 1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1577 | `+ 3. ResourceBase: Complete resource functionality for domain models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1609 | `+ T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1611 | `+ class ResourceBaseModel(TimestampedModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1898 | `+     Mixin class to provide the 'resource' relationship to ResourceBaseModel.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1919 | `+ class ResourceBase(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1927 | `+         class Product(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1937 | `+ ResourceModelType = TypeVar('ResourceModelType', bound=ResourceBase)` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1953 | `+ - ResourceBase: Base class for domain models with resource capabilities` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1954 | `+ - ResourceBaseModel: Abstract base for resource models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1959 | `+     ResourceBase,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1960 | `+     ResourceBaseModel,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1967 | `+     "ResourceBase",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L7 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L9 | `3. ResourceBase: Complete resource functionality for domain models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L41 | `T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L43 | `class ResourceBaseModel(TimestampedModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L330 | `Mixin class to provide the 'resource' relationship to ResourceBaseModel.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L351 | `class ResourceBase(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L359 | `class Product(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L370 | `ResourceModelType = TypeVar('ResourceModelType', bound=ResourceBase)` |
+
+</details>
+
+---
+
+Now let's check for any TypeVar or type hint usages that reference `ResourceBase`:
+
+---
+
+<details>
+            <summary>Grep search for "TypeVar.*ResourceBase" • **3** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1609 | `+ T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1937 | `+ ResourceModelType = TypeVar('ResourceModelType', bound=ResourceBase)` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L41 | `T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L370 | `ResourceModelType = TypeVar('ResourceModelType', bound=ResourceBase)` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L41 | `T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L370 | `ResourceModelType = TypeVar('ResourceModelType', bound=ResourceBase)` |
+
+</details>
+
+---
+
+Let's start with the core class definition in `registro/core/resource_base.py`:
+
+---
+
+Read file: registro/core/resource_base.py
+
+---
+
+Now I'll start renaming the class from `ResourceBase` to `BaseResourceType`. Let's first edit the core class definition:
+
+---
+
+```diff
+          )
+  
+- class ResourceBase(ResourceBaseModel, ResourceRelationshipMixin, table=False):
++ class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):
+      """
+      Complete resource-based model combining all functionality.
+      Example:
+          ```python
+-         class Product(ResourceBase, table=True):
++         class Product(BaseResourceType, table=True):
+              __resource_type__ = "product"
+              
+  
+  # Types for type hints
+- ResourceModelType = TypeVar('ResourceModelType', bound=ResourceBase) 
++ ResourceModelType = TypeVar('ResourceModelType', bound=BaseResourceType) 
+```
+
+---
+
+Now let's update the imports in the `core/__init__.py` file:
+
+---
+
+```diff
+  This module provides the main components for working with resources:
+  - Resource: The base model for all resources
+- - ResourceBase: Base class for domain models with resource capabilities
++ - BaseResourceType: Base class for domain models with resource capabilities
+  - ResourceBaseModel: Abstract base for resource models
+  """
+  
+  from registro.core.resource import Resource
+  from registro.core.resource_base import (
+-     ResourceBase,
++     BaseResourceType,
+      ResourceBaseModel,
+      ResourceRelationshipMixin,
+  __all__ = [
+      "Resource",
+-     "ResourceBase",
++     "BaseResourceType",
+      "ResourceBaseModel",
+      "ResourceRelationshipMixin",
+```
+
+---
+
+Let's update the main `__init__.py` file as well:
+
+---
+
+Read file: registro/__init__.py
+
+---
+
+```diff
+  
+  ```python
+- from registro import Resource, ResourceBase
++ from registro import Resource, BaseResourceType
+  from sqlmodel import SQLModel, Field
+  
+- class MyModel(ResourceBase, table=True):
++ class MyModel(BaseResourceType, table=True):
+      __resource_type__ = "my-model"
+      
+  # Export core classes
+  from registro.core.resource import Resource
+- from registro.core.resource_base import ResourceBase, ResourceBaseModel
++ from registro.core.resource_base import BaseResourceType, ResourceBaseModel
+  
+  # Make these accessible at the package level
+  __all__ = [
+      "Resource",
+-     "ResourceBase",
++     "BaseResourceType",
+      "ResourceBaseModel",
+  ]
+```
+
+---
+
+Now let's update the examples to make sure they use the new class name:
+
+---
+
+Read file: registro/examples/basic_usage.py
+
+---
+
+```diff
+  
+  ## What This Example Covers
+- 1. Creating a simple domain model with ResourceBase
++ 1. Creating a simple domain model with BaseResourceType
+  2. Configuring the service name
+  3. Creating database tables and storing resources
+  
+  ## Key Concepts
+- - **ResourceBase**: The foundation class that adds resource capabilities to your models
++ - **BaseResourceType**: The foundation class that adds resource capabilities to your models
+  - **RIDs (Resource Identifiers)**: Unique identifiers with a structured format
+  - **Resource Registry**: Automatic tracking of all resources in a central registry
+  
+  from sqlmodel import Field, Session, SQLModel, create_engine, select
+- from registro import ResourceBase, Resource
++ from registro import BaseResourceType, Resource
+  from registro.config import settings
+  
+  ## Step 2: Define Resource Models
+  
+- Next, we define our domain models by extending the ResourceBase class. This adds 
++ Next, we define our domain models by extending the BaseResourceType class. This adds 
+  resource capabilities to our models, including:
+  
+  
+  # Define a Book model
+- class Book(ResourceBase, table=True):
++ class Book(BaseResourceType, table=True):
+      """
+      Book model with resource capabilities.
+```
+
+---
+
+Let's continue with other usages in the basic_usage.py file:
+
+---
+
+Read file: registro/examples/basic_usage.py
+
+---
+
+```diff
+  ## Key Takeaways
+  
+- 1. **ResourceBase Integration**: Easily add resource capabilities to any model
++ 1. **BaseResourceType Integration**: Easily add resource capabilities to any model
+  2. **Unique Identifiers**: RIDs provide globally unique identifiers with built-in metadata
+  3. **Automatic Registration**: Resources are automatically tracked in the registry
+```
+
+---
+
+Now let's update the integration_example.py file:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+  
+  ## Key Concepts
+- - **ResourceBase Integration**: Using Registro models in FastAPI endpoints
++ - **BaseResourceType Integration**: Using Registro models in FastAPI endpoints
+  - **Pydantic Integration**: Converting between Registro models and API schemas
+  - **RESTful Endpoints**: Building resource-oriented API endpoints
+  from sqlmodel import Field, Session, SQLModel, create_engine, select
+  
+- from registro import ResourceBase, Resource
++ from registro import BaseResourceType, Resource
+  from registro.config import settings
+  
+  ## Step 4: Define Resource Models
+  
+- Next, we define our domain models by extending ResourceBase. This adds resource
++ Next, we define our domain models by extending BaseResourceType. This adds resource
+  capabilities to our models, including RIDs, status tracking, and metadata.
+  
+  
+  # Resource model
+- class Task(ResourceBase, table=True):
++ class Task(BaseResourceType, table=True):
+      """
+      Task model with resource capabilities.
+```
+
+---
+
+Continue with the end of the integration_example.py file:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+  
+  2. **Schema Separation**:
+-    - Separate database models (ResourceBase) from API schemas
++    - Separate database models (BaseResourceType) from API schemas
+     - Use validation in request models
+     - Include resource metadata in response models
+```
+
+---
+
+Now let's update the custom_resource.py file:
+
+---
+
+Read file: registro/examples/custom_resource.py
+
+---
+
+```diff
+  from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
+  from pydantic import field_validator, ValidationInfo
+- from registro import ResourceBase, Resource
++ from registro import BaseResourceType, Resource
+  from registro.config import settings
+  
+  To create custom resources with Registro, you typically:
+  
+- 1. Create a base class that extends `ResourceBase`
++ 1. Create a base class that extends `BaseResourceType`
+  2. Define custom fields, validators, and methods
+  3. Set the resource service and instance in `__init__`
+  
+  # Define a custom base class with extended functionality
+- class InventoryItem(ResourceBase, table=False):
++ class InventoryItem(BaseResourceType, table=False):
+      """
+      Base class for inventory items with custom status values.
+      
+      # Override status values - customize the allowed status values for your domain
+-     # This replaces the default status values in ResourceBase
++     # This replaces the default status values in BaseResourceType
+      __status_values__: ClassVar[Set[str]] = {
+          "DRAFT",           # Item not yet ready for sale
+```
+
+---
+
+Let's read more of the custom_resource.py file to find other instances to replace:
+
+---
+
+Read file: registro/examples/custom_resource.py
+
+---
+
+```diff
+  
+  # Create a model for tracking inventory movements
+- class InventoryMovement(ResourceBase, table=True):
++ class InventoryMovement(BaseResourceType, table=True):
+      """
+      Tracks movements of inventory items (additions, removals, adjustments).
+```
+
+---
+
+Now let's update the README.md file:
+
+---
+
+Read file: README.md
+
+---
+
+```diff
+  
+  ```python
+- from registro import Resource, ResourceBase
++ from registro import Resource, BaseResourceType
+  from sqlmodel import Field, Session, SQLModel, create_engine
+  
+  # Define a model with resource capabilities
+- class Book(ResourceBase, table=True):
++ class Book(BaseResourceType, table=True):
+      __resource_type__ = "book"
+  
+```
+
+---
+
+Let's search for any remaining instances of `ResourceBase` we might have missed:
+
+---
+
+<details>
+            <summary>Grep search for "ResourceBase" • **7** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L6 | `- ResourceBaseModel: Abstract base for resource models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L12 | `ResourceBaseModel,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L20 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L7 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L9 | `3. ResourceBase: Complete resource functionality for domain models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L41 | `T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L43 | `class ResourceBaseModel(TimestampedModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L330 | `Mixin class to provide the 'resource' relationship to ResourceBaseModel.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L351 | `class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L29 | `from registro.core.resource_base import BaseResourceType, ResourceBaseModel` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L35 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L8 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L10 | `3. ResourceBase: Combines the above for complete resource functionality` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L43 | `class ResourceBaseModel(DatabaseWithTimestampsModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L196 | `subclasses of ResourceBaseModel using SQLModel's Relationship V2.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L209 | `class ResourceTypeBaseModel(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L211 | `Intermediate base class combining ResourceBaseModel and ResourceRelationshipMixin.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L7 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L9 | `3. ResourceBase: Complete resource functionality for domain models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L41 | `T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L43 | `class ResourceBaseModel(TimestampedModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L330 | `Mixin class to provide the 'resource' relationship to ResourceBaseModel.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L351 | `class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L6 | `- ResourceBaseModel: Abstract base for resource models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L12 | `ResourceBaseModel,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L20 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L29 | `from registro.core.resource_base import BaseResourceType, ResourceBaseModel` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L35 | `"ResourceBaseModel",` |
+
+</details>
+
+---
+
+Let's update the resource_base.py file to fix the remaining docstring references to ResourceBase:
+
+---
+
+```diff
+  1. ResourceBaseModel: Abstract base for resource attributes and behavior
+  2. ResourceRelationshipMixin: Provides relationship to Resource model
+- 3. ResourceBase: Complete resource functionality for domain models
++ 3. BaseResourceType: Complete resource functionality for domain models
+  
+  Key features:
+```
+
+---
+
+Now let's update the resource_based.py file:
+
+---
+
+Read file: registro/resource_based.py
+
+---
+
+```diff
+  1. ResourceBaseModel: Abstract base for resource attributes and behavior
+  2. ResourceRelationshipMixin: Provides relationship to Resource model using SQLModel's Relationship
+- 3. ResourceBase: Combines the above for complete resource functionality
++ 3. BaseResourceType: Combines the above for complete resource functionality
+  
+  Key Features:
+```
+
+---
+
+Let's update the example in the docstring of BaseResourceType in resource_base.py:
+
+---
+
+
+
+---
+
+
+
+
+
+---
+
+_**User**_
+
+please continue
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Let's continue by updating the resource_based.py file to rename the `ResourceTypeBaseModel` class to be consistent with our naming scheme:
+
+---
+
+```diff
+  
+  # Intermediate Base Class
+- class ResourceTypeBaseModel(ResourceBaseModel, ResourceRelationshipMixin, table=False):
++ class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):
+      """
+      Intermediate base class combining ResourceBaseModel and ResourceRelationshipMixin.
+```
+
+---
+
+Now let's search for any other occurrences of "ResourceBase" that might still exist in the codebase:
+
+---
+
+<details>
+            <summary>Grep search for "ResourceBase" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L21 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L28 | `class InventoryItem(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L64 | `Let's try a different approach with the standard naming pattern used in the ResourceBase class:` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L69 | `<summary>Searched codebase "ResourceBase service definition" • **25** results</summary>` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L233 | `⟪ 129 characters skipped ⟫ This is the correct attribute that the ResourceBase implementation looks for when generating RIDs.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L484 | `<summary>Searched codebase "ResourceBase service and instance" • **25** results</summary>` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L523 | `<summary>Searched codebase "ResourceBaseModel creating resource instance service" • **25** results</summary>` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L628 | `class InventoryItem(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L824 | `class Item (ResourceBase(service="inventory", instance="store", etc etc)):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L837 | `Unfortunately, you can't pass parameters directly in the class inheritance declaration like that in Python. The syntax you suggested (`ResourceBase(service="inventory", instance="store")`) would try to create an instance of ResourceBase rather than a subclass.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L844 | `class Item(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L853 | `class InventoryResourceBase(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L864 | `class Item(InventoryResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L919 | `- 3. Extending ResourceBase with additional functionality` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L939 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L947 | `+ 1. Create a base class that extends `ResourceBase`` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L961 | `class InventoryItem(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L977 | `+     # This replaces the default status values in ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1141 | `class InventoryMovement(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1474 | `1. Creating a simple domain model with ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1484 | `+ - **ResourceBase**: The foundation class that adds resource capabilities to your models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1512 | `+ Next, we define our domain models by extending the ResourceBase class. This adds` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1524 | `class Book(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1642 | `+ 1. **ResourceBase Integration**: Easily add resource capabilities to any model` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1683 | `- 2. Creating database models with ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1703 | `+ - **ResourceBase Integration**: Using Registro models in FastAPI endpoints` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1723 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1807 | `+ Next, we define our domain models by extending ResourceBase. This adds resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1814 | `class Task(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L2175 | `+    - Separate database models (ResourceBase) from API schemas` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L2367 | `can you help me rename the ResourceBase to BaseResourceType in the entire codebase (including documentation)?` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L2377 | `I'll help you rename `ResourceBase` to `BaseResourceType` throughout the codebase. Let's start by finding all occurrences of `ResourceBase`:` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L2382 | `<summary>Searched codebase "ResourceBase" • **25** results</summary>` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L320 | `+ from registro import Resource, ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L323 | `+ class MyModel(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L335 | `+ from registro.core.resource_base import ResourceBase, ResourceBaseModel` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L340 | `+     "ResourceBase",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L341 | `+     "ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L386 | `+ from registro import Resource, ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L390 | `+ class Book(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1562 | `Finally, let's implement the ResourceBase model:` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1575 | `+ 1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1577 | `+ 3. ResourceBase: Complete resource functionality for domain models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1609 | `+ T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1611 | `+ class ResourceBaseModel(TimestampedModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1898 | `+     Mixin class to provide the 'resource' relationship to ResourceBaseModel.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1919 | `+ class ResourceBase(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1927 | `+         class Product(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1937 | `+ ResourceModelType = TypeVar('ResourceModelType', bound=ResourceBase)` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1953 | `+ - ResourceBase: Base class for domain models with resource capabilities` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1954 | `+ - ResourceBaseModel: Abstract base for resource models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1959 | `+     ResourceBase,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1960 | `+     ResourceBaseModel,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1967 | `+     "ResourceBase",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1968 | `+     "ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1987 | `+ 1. Creating a simple domain model with ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1995 | `+ from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2002 | `+ class Book(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2110 | `+ 3. Extending ResourceBase with additional functionality` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2118 | `+ from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2125 | `+ class InventoryItem(ResourceBase, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2214 | `+ class InventoryMovement(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2409 | `+ 2. Creating database models with ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2420 | `+ from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2441 | `+ class Task(ResourceBase, table=True):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2679 | `│   │   └── resource_base.py # ResourceBase for domain models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2726 | `2. **ResourceBase**: Base class for domain models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L3102 | `from registro import ResourceBase, Resource` |
+
+</details>
+
+---
+
+Let's search for files that might have import statements with ResourceBase but might not have been caught by our previous searches:
+
+---
+
+<details>
+            <summary>Grep search for "from\s+registro\s+import.*ResourceBase" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L21 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L939 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_01-30-configuring-service-in-custom-resource.md` | L1723 | `from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L320 | `+ from registro import Resource, ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L386 | `+ from registro import Resource, ResourceBase` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L1995 | `+ from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2118 | `+ from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L2420 | `+ from registro import ResourceBase, Resource` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/.specstory/history/2025-03-20_00-41-transforming-code-into-open-source-library.md` | L3102 | `from registro import ResourceBase, Resource` |
+
+</details>
+
+---
+
+Let's also check for ResourceBaseModel or any typevars that reference these classes:
+
+---
+
+<details>
+            <summary>Grep search for "ResourceBaseModel" • **8** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L7 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L41 | `T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L43 | `class ResourceBaseModel(TimestampedModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L330 | `Mixin class to provide the 'resource' relationship to ResourceBaseModel.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L351 | `class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L6 | `- ResourceBaseModel: Abstract base for resource models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L12 | `ResourceBaseModel,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L20 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L8 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L43 | `class ResourceBaseModel(DatabaseWithTimestampsModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L196 | `subclasses of ResourceBaseModel using SQLModel's Relationship V2.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L209 | `class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L211 | `Intermediate base class combining ResourceBaseModel and ResourceRelationshipMixin.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L29 | `from registro.core.resource_base import BaseResourceType, ResourceBaseModel` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L35 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L7 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L41 | `T = TypeVar('T', bound='ResourceBaseModel')` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L43 | `class ResourceBaseModel(TimestampedModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L330 | `Mixin class to provide the 'resource' relationship to ResourceBaseModel.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/resource_base.py` | L351 | `class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L6 | `- ResourceBaseModel: Abstract base for resource models` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L12 | `ResourceBaseModel,` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/core/__init__.py` | L20 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L29 | `from registro.core.resource_base import BaseResourceType, ResourceBaseModel` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/__init__.py` | L35 | `"ResourceBaseModel",` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L8 | `1. ResourceBaseModel: Abstract base for resource attributes and behavior` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L43 | `class ResourceBaseModel(DatabaseWithTimestampsModel, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L196 | `subclasses of ResourceBaseModel using SQLModel's Relationship V2.` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L209 | `class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):` |
+| `vscode-remote://ssh-remote%2B51d73fd8-a177-4eca-bf17-d2ce07cf6a2e@51d73fd8-a177-4eca-bf17-d2ce07cf6a2e-00-2cvhc6pkvuru3.worf.replit.dev:22/home/runner/workspace/registro/resource_based.py` | L211 | `Intermediate base class combining ResourceBaseModel and ResourceRelationshipMixin.` |
+
+</details>
+
+---
+
+Let's run a
 
 ---
 

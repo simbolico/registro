@@ -16,7 +16,7 @@ resource handling, validation, and relationship management.
 5. Leveraging Registro's resource identification and metadata
 
 ## Key Concepts
-- **ResourceBase Integration**: Using Registro models in FastAPI endpoints
+- **BaseResourceType Integration**: Using Registro models in FastAPI endpoints
 - **Pydantic Integration**: Converting between Registro models and API schemas
 - **RESTful Endpoints**: Building resource-oriented API endpoints
 - **Resource Querying**: Filtering and retrieving resources in API context
@@ -34,7 +34,7 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from registro import ResourceBase, Resource
+from registro import BaseResourceType, Resource
 from registro.config import settings
 
 """
@@ -90,14 +90,14 @@ def get_session():
 """
 ## Step 4: Define Resource Models
 
-Next, we define our domain models by extending ResourceBase. This adds resource
+Next, we define our domain models by extending BaseResourceType. This adds resource
 capabilities to our models, including RIDs, status tracking, and metadata.
 
 For our task manager, we'll create a Task model that represents a todo item.
 """
 
 # Resource model
-class Task(ResourceBase, table=True):
+class Task(BaseResourceType, table=True):
     """
     Task model with resource capabilities.
     
@@ -497,7 +497,7 @@ async def read_resources(
    - Define clear resource boundaries
 
 2. **Schema Separation**:
-   - Separate database models (ResourceBase) from API schemas
+   - Separate database models (BaseResourceType) from API schemas
    - Use validation in request models
    - Include resource metadata in response models
 

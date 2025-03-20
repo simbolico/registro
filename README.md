@@ -30,11 +30,11 @@ rye add registro
 ## Quick Start
 
 ```python
-from registro import Resource, ResourceBase
+from registro import Resource, BaseResourceType
 from sqlmodel import Field, Session, SQLModel, create_engine
 
 # Define a model with resource capabilities
-class Book(ResourceBase, table=True):
+class Book(BaseResourceType, table=True):
     __resource_type__ = "book"
 
     title: str = Field(index=True)

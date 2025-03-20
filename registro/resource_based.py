@@ -8,7 +8,7 @@ Resource creation, validation, and relationship management.
 The module implements three main components:
 1. ResourceBaseModel: Abstract base for resource attributes and behavior
 2. ResourceRelationshipMixin: Provides relationship to Resource model using SQLModel's Relationship
-3. ResourceBase: Combines the above for complete resource functionality
+3. BaseResourceType: Combines the above for complete resource functionality
 
 Key Features:
 - Automatic Resource creation when instances are added to session
@@ -207,7 +207,7 @@ class ResourceRelationshipMixin:
         )
 
 # Intermediate Base Class
-class ResourceTypeBaseModel(ResourceBaseModel, ResourceRelationshipMixin, table=False):
+class BaseResourceType(ResourceBaseModel, ResourceRelationshipMixin, table=False):
     """
     Intermediate base class combining ResourceBaseModel and ResourceRelationshipMixin.
     Concrete classes inherit from this. Still abstract (table=False).

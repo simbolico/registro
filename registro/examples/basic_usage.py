@@ -8,14 +8,14 @@ in a simple application. It shows how to create, query, and manage resources wit
 setup, perfect for getting started with the library.
 
 ## What This Example Covers
-1. Creating a simple domain model with ResourceBase
+1. Creating a simple domain model with BaseResourceType
 2. Configuring the service name
 3. Creating database tables and storing resources
 4. Querying resources by various attributes
 5. Accessing resource metadata and relationships
 
 ## Key Concepts
-- **ResourceBase**: The foundation class that adds resource capabilities to your models
+- **BaseResourceType**: The foundation class that adds resource capabilities to your models
 - **RIDs (Resource Identifiers)**: Unique identifiers with a structured format
 - **Resource Registry**: Automatic tracking of all resources in a central registry
 - **Resource Metadata**: Service, instance, type, and other metadata accessible via properties
@@ -30,7 +30,7 @@ workspace_dir = os.path.abspath(os.path.join(parent_dir, '..'))
 sys.path.insert(0, workspace_dir)
 
 from sqlmodel import Field, Session, SQLModel, create_engine, select
-from registro import ResourceBase, Resource
+from registro import BaseResourceType, Resource
 from registro.config import settings
 
 """
@@ -51,7 +51,7 @@ settings.DEFAULT_SERVICE = "bookshop"
 """
 ## Step 2: Define Resource Models
 
-Next, we define our domain models by extending the ResourceBase class. This adds 
+Next, we define our domain models by extending the BaseResourceType class. This adds 
 resource capabilities to our models, including:
 
 - Unique RIDs with format: ri.{service}.{instance}.{resource_type}.{id}
@@ -63,7 +63,7 @@ The `table=True` parameter tells SQLModel to create a database table for this mo
 """
 
 # Define a Book model
-class Book(ResourceBase, table=True):
+class Book(BaseResourceType, table=True):
     """
     Book model with resource capabilities.
     
@@ -200,7 +200,7 @@ with Session(engine) as session:
 """
 ## Key Takeaways
 
-1. **ResourceBase Integration**: Easily add resource capabilities to any model
+1. **BaseResourceType Integration**: Easily add resource capabilities to any model
 2. **Unique Identifiers**: RIDs provide globally unique identifiers with built-in metadata
 3. **Automatic Registration**: Resources are automatically tracked in the registry
 4. **Metadata Access**: Access service, instance, and type information directly

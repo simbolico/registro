@@ -12,10 +12,10 @@ Registro provides a resource-based approach to SQLModel, offering:
 Basic usage:
 
 ```python
-from registro import Resource, ResourceBase
+from registro import Resource, BaseResourceType
 from sqlmodel import SQLModel, Field
 
-class MyModel(ResourceBase, table=True):
+class MyModel(BaseResourceType, table=True):
     __resource_type__ = "my-model"
     
     name: str = Field(default="")
@@ -27,11 +27,11 @@ __version__ = "0.1.0"
 
 # Export core classes
 from registro.core.resource import Resource
-from registro.core.resource_base import ResourceBase, ResourceBaseModel
+from registro.core.resource_base import BaseResourceType, ResourceBaseModel
 
 # Make these accessible at the package level
 __all__ = [
     "Resource",
-    "ResourceBase",
+    "BaseResourceType",
     "ResourceBaseModel",
 ]

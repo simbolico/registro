@@ -50,7 +50,7 @@ sys.path.insert(0, workspace_dir)
 from typing import ClassVar, Set, Optional, List
 from sqlmodel import Field, Session, SQLModel, create_engine, select, Relationship
 from pydantic import field_validator, ValidationInfo
-from registro import ResourceBase, Resource
+from registro import BaseResourceType, Resource
 from registro.config import settings
 
 """
@@ -58,7 +58,7 @@ from registro.config import settings
 
 To create custom resources with Registro, you typically:
 
-1. Create a base class that extends `ResourceBase`
+1. Create a base class that extends `BaseResourceType`
 2. Define custom fields, validators, and methods
 3. Set the resource service and instance in `__init__`
 4. Define status values and other class-level configurations
@@ -72,7 +72,7 @@ This pattern allows you to create a domain-specific resource hierarchy.
 """
 
 # Define a custom base class with extended functionality
-class InventoryItem(ResourceBase, table=False):
+class InventoryItem(BaseResourceType, table=False):
     """
     Base class for inventory items with custom status values.
     
@@ -86,7 +86,7 @@ class InventoryItem(ResourceBase, table=False):
     """
     
     # Override status values - customize the allowed status values for your domain
-    # This replaces the default status values in ResourceBase
+    # This replaces the default status values in BaseResourceType
     __status_values__: ClassVar[Set[str]] = {
         "DRAFT",           # Item not yet ready for sale
         "IN_STOCK",        # Item available for purchase
@@ -267,7 +267,7 @@ that references both Product and DigitalItem resources.
 """
 
 # Create a model for tracking inventory movements
-class InventoryMovement(ResourceBase, table=True):
+class InventoryMovement(BaseResourceType, table=True):
     """
     Tracks movements of inventory items (additions, removals, adjustments).
     
