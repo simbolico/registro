@@ -1,0 +1,41 @@
+Physical Products:
+  Product 1 - SKU: PRD-0001, Price: $16.24
+    Status: IN_STOCK, Stock: 24
+    RID: ri.inventory.store.product.01JPRREK0RK1EWENJ0PCJ9Q809
+
+  Product 2 - SKU: PRD-0002, Price: $21.49
+    Status: IN_STOCK, Stock: 16
+    RID: ri.inventory.store.product.01JPRREK0SC79GVFT7NQFYE7TW
+
+  Product 3 - SKU: PRD-0003, Price: $26.74
+    Status: IN_STOCK, Stock: 17
+    RID: ri.inventory.store.product.01JPRREK0SS52HFRG6F3HJ8SXH
+
+Digital Items:
+  Digital Item 1 - SKU: DIG-0001, Price: $7.99
+    File Size: 31.0 MB
+    RID: ri.inventory.store.digital-item.01JPRREK0K79JVTZMREFKE6XBS
+
+  Digital Item 2 - SKU: DIG-0002, Price: $9.99
+    File Size: 51.5 MB
+    RID: ri.inventory.store.digital-item.01JPRREK0N4CD77D6SMFPNZHHD
+
+Inventory Movements:
+  Add Stock to Product 1 - ADDITION, Quantity: 5
+    Product: Product 1
+    RID: ri.inventory.store.inventory-movement.01JPRREK2B7R69Q23PSN7YWGM1
+
+  Remove Stock from Product 2 - REMOVAL, Quantity: 2
+    Product: Product 2
+    RID: ri.inventory.store.inventory-movement.01JPRREK2C3SNTHQF3WWTMM2BE
+
+  Download Digital Item 1 - REMOVAL, Quantity: 1
+    Digital Item: Digital Item 1
+    RID: ri.inventory.store.inventory-movement.01JPRREK2C2FARA2VZ3JRZXD4Z
+
+Resource Summary:
+  digital-item: 2 resources
+  inventory-movement: 3 resources
+  product: 3 resources
+
+Custom resource example completed successfully!
