@@ -1442,6 +1442,893 @@ _**Assistant**_
 
 ---
 
+I'll enhance the documentation for the other example files. Let's start with examining what's in them before updating:
+
+---
+
+Read file: registro/examples/basic_usage.py
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+Now I'll enhance both files with detailed documentation similar to the custom_resource.py example. Let's start with the basic_usage.py file:
+
+---
+
+```diff
+  """
+- Basic usage example for the Registro library.
+- 
+- This example demonstrates:
++ # Registro Basic Usage Example
++ # ===========================
++ 
++ ## Overview
++ This example demonstrates the fundamental concepts of using Registro for managing resources
++ in a simple application. It shows how to create, query, and manage resources with minimal
++ setup, perfect for getting started with the library.
++ 
++ ## What This Example Covers
+  1. Creating a simple domain model with ResourceBase
+- 2. Creating database tables
+- 3. Creating and querying instances
+- 4. Accessing resource metadata
++ 2. Configuring the service name
++ 3. Creating database tables and storing resources
++ 4. Querying resources by various attributes
++ 5. Accessing resource metadata and relationships
++ 
++ ## Key Concepts
++ - **ResourceBase**: The foundation class that adds resource capabilities to your models
++ - **RIDs (Resource Identifiers)**: Unique identifiers with a structured format
++ - **Resource Registry**: Automatic tracking of all resources in a central registry
++ - **Resource Metadata**: Service, instance, type, and other metadata accessible via properties
+  """
+  
+  from registro.config import settings
+  
+- # Optional: Configure Registro settings
++ """
++ ## Step 1: Configure Registro
++ 
++ First, we need to configure Registro with our service name. This will be used as part of the
++ RID (Resource Identifier) for all resources. The service name typically represents your
++ application or domain.
++ 
++ You can also configure this via environment variables:
++ - REGISTRO_DEFAULT_SERVICE
++ - REGISTRO_DEFAULT_INSTANCE
++ """
++ 
++ # Configure the service name - this will be used in all RIDs
+  settings.DEFAULT_SERVICE = "bookshop"
+  
+- # Define a model
++ """
++ ## Step 2: Define Resource Models
++ 
++ Next, we define our domain models by extending the ResourceBase class. This adds 
++ resource capabilities to our models, including:
++ 
++ - Unique RIDs with format: ri.{service}.{instance}.{resource_type}.{id}
++ - Status tracking
++ - Automatic registration in the Resource registry
++ - Metadata properties (service, instance, resource_type, etc.)
++ 
++ The `table=True` parameter tells SQLModel to create a database table for this model.
++ """
++ 
++ # Define a Book model
+  class Book(ResourceBase, table=True):
+-     """Book model with resource capabilities."""
++     """
++     Book model with resource capabilities.
++     
++     This model represents books in our bookshop system. Each book automatically
++     becomes a resource with a unique RID when created.
++     
++     Attributes:
++         title (str): The book title
++         author (str): The book author
++         year (int): Publication year
++         pages (int): Number of pages
++     """
++     # The resource_type is used in the RID and for resource categorization
+      __resource_type__ = "book"
+      
++     # Define model fields
+      title: str = Field(index=True)
+      author: str = Field(index=True)
+      
+      def __repr__(self):
++         """String representation of a Book."""
+          return f"Book(rid={self.rid}, title='{self.title}', author='{self.author}')"
+  
++ """
++ ## Step 3: Set Up the Database
++ 
++ Now we'll set up a SQLite database for storing our resources. Registro works with
++ SQLModel, which is built on SQLAlchemy, providing a powerful yet easy-to-use ORM.
++ """
++ 
+  # Create a SQLite database
+  sqlite_file = "bookshop.db"
+  engine = create_engine(f"sqlite:///{sqlite_file}", echo=True)
+  SQLModel.metadata.create_all(engine)
++ 
++ """
++ ## Step 4: Create and Save Resources
++ 
++ Let's create some book resources and save them to the database. When we create
++ instances of our Book model, they automatically become resources with unique RIDs.
++ """
+  
+  # Create and save books
+      books = [
+          Book(
+-             api_name=f"book{i}",
+-             title=f"Book {i}",
+-             author=f"Author {i}",
+-             year=2020 + i,
+-             pages=100 + i * 50
++             api_name=f"book{i}",          # Machine-readable identifier
++             title=f"Book {i}",            # Book title 
++             author=f"Author {i}",         # Author name
++             year=2020 + i,                # Publication year
++             pages=100 + i * 50            # Number of pages
+          )
+          for i in range(1, 6)
+      ]
+      
++     # Add books to the session and commit
+      session.add_all(books)
+      session.commit()
+      
+-     # Refresh to get generated values
++     # Refresh to get generated values and print details
+      for book in books:
+          session.refresh(book)
+          print(f"Created: {book}")
+-         print(f"  RID: {book.rid}")
+-         print(f"  Service: {book.service}")
+-         print(f"  Resource Type: {book.resource_type}")
+-         print(f"  Resource ID: {book.resource_id}")
++         print(f"  RID: {book.rid}")  # Resource Identifier with format ri.{service}.{instance}.{resource_type}.{id}
++         print(f"  Service: {book.service}")  # The service name (from RID)
++         print(f"  Resource Type: {book.resource_type}")  # The resource type (from RID)
++         print(f"  Resource ID: {book.resource_id}")  # The ID part of the RID
+          print()
+  
++ """
++ ## Step 5: Query Resources
++ 
++ Now that we have created some resources, let's query them in various ways.
++ Registro works seamlessly with SQLModel queries.
++ """
++ 
+  # Query books
+  with Session(engine) as session:
+      print(f"Found book by title: {book}")
+      
+-     # Get the Resource record
++     # Get the Resource record from the Book instance
+      if book:
+          resource = book.get_resource(session)
+          print(f"  {book.title} ({book.year}) - {book.rid}")
+  
++ """
++ ## Step 6: Work with Resource Relationships
++ 
++ Registro maintains a registry of all resources in the central Resource table.
++ This allows us to query resources independently of their specific types, and
++ join with type-specific tables when needed.
++ """
++ 
+  # Use resource relationships
+  with Session(engine) as session:
+          print(f"  {resource.rid} (created at {resource.created_at})")
+      
+-     # Join with Book table
++     # Join with Book table - this demonstrates how to work with both tables
+      book_resources = session.exec(
+          select(Book, Resource).
+          print(f"  {book.title} - {resource.rid}")
+  
++ """
++ ## Key Takeaways
++ 
++ 1. **ResourceBase Integration**: Easily add resource capabilities to any model
++ 2. **Unique Identifiers**: RIDs provide globally unique identifiers with built-in metadata
++ 3. **Automatic Registration**: Resources are automatically tracked in the registry
++ 4. **Metadata Access**: Access service, instance, and type information directly
++ 5. **Query Flexibility**: Query by model attributes or resource properties
++ 
++ ## Next Steps
++ 
++ - Check out the `custom_resource.py` example for creating custom status values and validators
++ - See `integration_example.py` for using Registro with FastAPI
++ - Explore advanced features like relationships between different resource types
++ """
++ 
+  print("\nBasic usage example completed successfully!")
+  
+```
+
+---
+
+Now, let's enhance the integration_example.py file:
+
+---
+
+
+
+---
+
+Let me try updating the integration_example.py file again:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+  """
+- Integration example with FastAPI.
+- 
+- This example demonstrates:
+- 1. Using Registro with FastAPI
+- 2. Creating database models with ResourceBase
+- 3. Implementing a RESTful API with resource operations
+- 4. Using Pydantic schemas for request/response models
++ # Registro FastAPI Integration Example
++ # ==================================
++ 
++ ## Overview
++ This example demonstrates how to integrate Registro with FastAPI to build a robust
++ RESTful API with resource-centric design. It shows how Registro's resource identification
++ and management capabilities enhance web API development by providing consistent 
++ resource handling, validation, and relationship management.
++ 
++ ## What This Example Covers
++ 1. Integrating Registro with FastAPI for building REST APIs
++ 2. Creating a simple task management API with CRUD operations
++ 3. Using Pydantic schemas for request and response models
++ 4. Implementing resource-based API endpoints
++ 5. Leveraging Registro's resource identification and metadata
++ 
++ ## Key Concepts
++ - **ResourceBase Integration**: Using Registro models in FastAPI endpoints
++ - **Pydantic Integration**: Converting between Registro models and API schemas
++ - **RESTful Endpoints**: Building resource-oriented API endpoints
++ - **Resource Querying**: Filtering and retrieving resources in API context
++ - **Resource Relationships**: Working with related resources in a web API
+  """
+  
+```
+
+---
+
+Now let's update the database setup section:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+  from registro import ResourceBase, Resource
+  from registro.config import settings
++ 
++ """
++ ## Step 1: Configure Registro
++ 
++ First, we configure Registro with our service and instance names. These will be used
++ in the RIDs (Resource Identifiers) for all resources created by this application.
++ 
++ - service: Identifies the application domain ("task-manager")
++ - instance: Identifies the deployment environment ("demo")
++ 
++ This configuration allows for logical separation of resources in different services
++ and environments while maintaining a consistent identification pattern.
++ """
+  
+  # Configure Registro
+```
+
+---
+
+Let's continue updating the file with sections for database setup and model definitions:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+  
+  # Configure Registro
+- settings.DEFAULT_SERVICE = "task-manager"
+- settings.DEFAULT_INSTANCE = "demo"
++ settings.DEFAULT_SERVICE = "task-manager"  # The service name for all resources
++ settings.DEFAULT_INSTANCE = "demo"         # The instance name for all resources
++ 
++ """
++ ## Step 2: Set Up the Database
++ 
++ We'll set up a SQLite database for storing our resources. In a production environment,
++ you might use PostgreSQL, MySQL, or another database supported by SQLAlchemy.
++ """
+  
+  # Database setup
+  engine = create_engine(f"sqlite:///{sqlite_file}")
+  SQLModel.metadata.create_all(engine)
++ 
++ """
++ ## Step 3: Create a Database Session Dependency
++ 
++ FastAPI uses dependency injection to provide components like database sessions.
++ This ensures proper session management and connection pooling.
++ """
+  
+  # Dependency to get database session
+  def get_session():
++     """
++     Create and yield a database session.
++     
++     This is a FastAPI dependency that creates a new SQLModel session for each 
++     request and ensures it's properly closed afterward, even if exceptions occur.
++     """
+      with Session(engine) as session:
+          yield session
+```
+
+---
+
+Now let's update the Task model and API schemas:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+          yield session
+  
+- # Resource models
++ """
++ ## Step 4: Define Resource Models
++ 
++ Next, we define our domain models by extending ResourceBase. This adds resource
++ capabilities to our models, including RIDs, status tracking, and metadata.
++ 
++ For our task manager, we'll create a Task model that represents a todo item.
++ """
++ 
++ # Resource model
+  class Task(ResourceBase, table=True):
+-     """Task model with resource capabilities."""
+-     __resource_type__ = "task"
++     """
++     Task model with resource capabilities.
++     
++     Each task becomes a resource with a unique RID and is tracked in the 
++     Resource registry. This model represents a todo item in our task manager.
++     
++     Attributes:
++         title (str): The task title
++         description (str, optional): Detailed description of the task
++         completed (bool): Whether the task is completed
++         priority (int): Task priority (1=low, 2=medium, 3=high)
++         tags (str, optional): Comma-separated tags for categorization
++     """
++     __resource_type__ = "task"  # The resource type, used in the RID
+      
+      title: str = Field(index=True)
+      @property
+      def tag_list(self) -> List[str]:
+-         """Convert tags string to list."""
++         """
++         Convert tags string to list.
++         
++         This convenience property splits the comma-separated tags string
++         into a list of individual tags, making it easier to work with tags
++         in application code.
++         
++         Returns:
++             List[str]: List of tags, or empty list if no tags
++         """
+          if not self.tags:
+              return []
+          return [tag.strip() for tag in self.tags.split(",") if tag.strip()]
+  
++ """
++ ## Step 5: Define API Schemas
++ 
++ We'll use Pydantic models (via SQLModel) to define request and response schemas.
++ This provides:
++ 
++ 1. Input validation for API requests
++ 2. Response serialization
++ 3. API documentation (via OpenAPI/Swagger)
++ 4. Clear separation between database models and API contracts
++ """
++ 
+  # Pydantic schemas for API
+  class TaskCreate(SQLModel):
+```
+
+---
+
+Let's continue enhancing the API schemas and FastAPI application:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+  # Pydantic schemas for API
+  class TaskCreate(SQLModel):
+-     """Schema for creating a task."""
++     """
++     Schema for creating a task.
++     
++     This defines the fields required to create a new task resource.
++     It's used for validating POST requests to the /tasks/ endpoint.
++     
++     Attributes:
++         api_name (str): Machine-readable name for the task
++         title (str): Human-readable title for the task
++         description (str, optional): Detailed description
++         priority (int): Task priority (1=low, 2=medium, 3=high)
++         tags (str, optional): Comma-separated tags
++     """
+      api_name: str
+      title: str
+  
+  class TaskUpdate(SQLModel):
+-     """Schema for updating a task."""
++     """
++     Schema for updating a task.
++     
++     This defines the fields that can be updated on an existing task.
++     All fields are optional, allowing partial updates.
++     
++     Attributes:
++         title (str, optional): Human-readable title for the task
++         description (str, optional): Detailed description
++         completed (bool, optional): Completion status
++         priority (int, optional): Task priority (1=low, 2=medium, 3=high)
++         tags (str, optional): Comma-separated tags
++     """
+      title: Optional[str] = None
+      description: Optional[str] = None
+  
+  class TaskResponse(SQLModel):
+-     """Schema for task response."""
++     """
++     Schema for task response.
++     
++     This defines the shape of task data returned by the API.
++     It includes both task-specific fields and resource metadata.
++     
++     Attributes:
++         rid (str): Resource identifier (RID)
++         api_name (str): Machine-readable name
++         title (str): Human-readable title
++         description (str, optional): Detailed description
++         completed (bool): Completion status
++         priority (int): Task priority
++         tags (str, optional): Comma-separated tags
++         status (str): Resource status
++         service (str): Resource service
++         resource_type (str): Resource type
++         resource_id (str): Resource ID (part of RID)
++     """
+      rid: str
+      api_name: str
+      resource_id: str
+  
++ """
++ ## Step 6: Create FastAPI Application
++ 
++ Now we'll create the FastAPI application with metadata and configure it for
++ our task management API.
++ """
++ 
+  # Create FastAPI application
+  app = FastAPI(
+```
+
+---
+
+Let's continue with enhancing the API endpoints documentation:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+  )
+  
+- # API routes
++ """
++ ## Step 7: Implement API Endpoints
++ 
++ Next, we'll implement the API endpoints for our task manager. We'll follow
++ RESTful design principles with the following endpoints:
++ 
++ - GET /tasks/ - List all tasks (with optional filtering)
++ - POST /tasks/ - Create a new task
++ - GET /tasks/{task_rid} - Get a specific task by RID
++ - PUT /tasks/{task_rid} - Update a specific task
++ - DELETE /tasks/{task_rid} - Delete a specific task
++ - GET /resources/ - List all resources (with optional filtering)
++ 
++ Each endpoint demonstrates how to work with Registro resources in an API context.
++ """
++ 
++ # Root endpoint
+  @app.get("/")
+  async def root():
++     """
++     Root endpoint that returns API information.
++     
++     This provides basic information about the API, including metadata 
++     about the Registro service and instance configuration.
++     
++     Returns:
++         dict: API information
++     """
+      return {
+          "message": "Task Manager API",
+      }
+  
++ # Create a task
+  @app.post("/tasks/", response_model=TaskResponse)
+  async def create_task(task: TaskCreate, session: Session = Depends(get_session)):
+-     """Create a new task."""
++     """
++     Create a new task.
++     
++     This endpoint creates a new task resource from the provided data.
++     The task is automatically assigned a unique RID with the format:
++     ri.task-manager.demo.task.{id}
++     
++     Parameters:
++         task (TaskCreate): The task data from the request body
++         session (Session): Database session (injected via dependency)
++     
++     Returns:
++         TaskResponse: The created task with resource metadata
++     """
++     # Convert the Pydantic model to a database model
+      db_task = Task(**task.model_dump())
+      session.add(db_task)
+      session.commit()
+      session.refresh(db_task)
+      
+-     # Convert to response model with additional fields
++     # Convert to response model with resource metadata
+      response_data = db_task.model_dump()
+      response_data.update({
+      return response_data
+  
++ # Get all tasks
+  @app.get("/tasks/", response_model=List[TaskResponse])
+  async def read_tasks(
+      session: Session = Depends(get_session)
+  ):
+-     """Get all tasks with optional filtering."""
++     """
++     Get all tasks with optional filtering.
++     
++     This endpoint retrieves all tasks, with optional filtering by completion
++     status and priority level.
++     
++     Parameters:
++         completed (bool, optional): Filter by completion status
++         priority (int, optional): Filter by priority level
++         session (Session): Database session (injected via dependency)
++     
++     Returns:
++         List[TaskResponse]: List of tasks with resource metadata
++     """
+      query = select(Task)
+      
+```
+
+---
+
+Let's continue enhancing the remaining endpoints:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+  @app.get("/tasks/{task_rid}", response_model=TaskResponse)
+  async def read_task(task_rid: str, session: Session = Depends(get_session)):
+-     """Get a specific task by its RID."""
++     """
++     Get a specific task by its RID.
++     
++     This endpoint retrieves a specific task by its Resource Identifier (RID).
++     The RID uniquely identifies the task across the entire system.
++     
++     Parameters:
++         task_rid (str): The Resource Identifier (RID) of the task
++         session (Session): Database session (injected via dependency)
++     
++     Returns:
++         TaskResponse: The task with resource metadata
++     
++     Raises:
++         HTTPException: If the task is not found (404)
++     """
+      task = session.exec(select(Task).where(Task.rid == task_rid)).first()
+      if not task:
+      session: Session = Depends(get_session)
+  ):
+-     """Update a task."""
++     """
++     Update a task.
++     
++     This endpoint updates a specific task identified by its RID.
++     Only the fields provided in the request will be updated.
++     
++     Parameters:
++         task_rid (str): The Resource Identifier (RID) of the task
++         task_update (TaskUpdate): The task data to update from request body
++         session (Session): Database session (injected via dependency)
++     
++     Returns:
++         TaskResponse: The updated task with resource metadata
++     
++     Raises:
++         HTTPException: If the task is not found (404)
++     """
+      db_task = session.exec(select(Task).where(Task.rid == task_rid)).first()
+      if not db_task:
+  @app.delete("/tasks/{task_rid}")
+  async def delete_task(task_rid: str, session: Session = Depends(get_session)):
+-     """Delete a task."""
++     """
++     Delete a task.
++     
++     This endpoint deletes a specific task identified by its RID.
++     The task is permanently removed from the database.
++     
++     Parameters:
++         task_rid (str): The Resource Identifier (RID) of the task
++         session (Session): Database session (injected via dependency)
++     
++     Returns:
++         dict: Message confirming deletion
++     
++     Raises:
++         HTTPException: If the task is not found (404)
++     """
+      db_task = session.exec(select(Task).where(Task.rid == task_rid)).first()
+      if not db_task:
+```
+
+---
+
+Let's finish up with the resources endpoint and conclusion:
+
+---
+
+Read file: registro/examples/integration_example.py
+
+---
+
+```diff
+      session: Session = Depends(get_session)
+  ):
+-     """Get all resources with optional filtering."""
++     """
++     Get all resources with optional filtering.
++     
++     This endpoint demonstrates how to work directly with the Resource registry.
++     It retrieves all resources or filters them by resource type.
++     
++     Parameters:
++         resource_type (str, optional): Filter by resource type
++         session (Session): Database session (injected via dependency)
++     
++     Returns:
++         List[Dict[str, Any]]: List of resources with metadata
++     """
+      query = select(Resource)
+      
+      ]
+  
++ """
++ ## Best Practices for API Design with Registro
++ 
++ 1. **Resource-Oriented Design**: 
++    - Use RIDs for consistent resource identification
++    - Structure endpoints around resources
++    - Define clear resource boundaries
++ 
++ 2. **Schema Separation**:
++    - Separate database models (ResourceBase) from API schemas
++    - Use validation in request models
++    - Include resource metadata in response models
++ 
++ 3. **Consistent Response Patterns**:
++    - Always include RIDs in responses
++    - Provide useful resource metadata
++    - Use consistent error patterns
++ 
++ 4. **Resource Relationships**:
++    - Use RIDs to reference related resources
++    - Implement relationship endpoints when needed
++    - Consider pagination for relationship collections
++ 
++ 5. **Resource Discovery**:
++    - Provide endpoints for discovering resources
++    - Support filtering by resource attributes
++    - Consider hypermedia links for navigation
++ """
++ 
+  # Run the application if executed directly
+  if __name__ == "__main__":
+```
+
+---
+
+Perfect! I've now enhanced both examples with comprehensive documentation:
+
+1. **basic_usage.py** - Demonstrates the fundamentals of Registro with clear explanations of resource concepts, database integration, and basic operations.
+
+2. **integration_example.py** - Shows how to integrate Registro with FastAPI to build a robust API with detailed documentation of all endpoints, schemas, and best practices.
+
+The documentation for both files now includes:
+
+- Clear section headings and organization
+- In-depth explanations of key concepts
+- Detailed docstrings for all classes and functions
+- Step-by-step guidance through the examples
+- Best practices and recommendations
+- Contextual comments within the code
+
+This comprehensive documentation provides an excellent developer experience and onboarding experience for new users of the Registro library, helping them understand both the basic concepts and more advanced integration patterns.
+
+---
+
+_**User**_
+
+how can i publish my project?
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+# Publishing Your Registro Project
+
+To publish your Registro project as a Python package with best practices:
+
+## 1. Set Up Your Package with Rye
+
+```bash
+# Initialize a new project if you haven't already
+rye init your-project
+
+# Configure your project metadata in pyproject.toml
+rye edit
+```
+
+Edit `pyproject.toml` with details about your package:
+```toml
+[project]
+name = "registro"
+version = "0.1.0"
+description = "Resource management library for structured application development"
+authors = [{name = "Your Name", email = "your.email@example.com"}]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "sqlmodel>=0.0.8",
+    "pydantic>=2.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/registro"
+Documentation = "https://registro.readthedocs.io"
+```
+
+## 2. Add Documentation
+
+Create comprehensive documentation:
+
+```bash
+# Install Sphinx
+rye add --dev sphinx sphinx-rtd-theme myst-parser
+
+# Initialize docs
+mkdir -p docs
+cd docs
+sphinx-quickstart
+```
+
+- Update `conf.py` to include your modules
+- Create API documentation with autodoc
+- Add your example code snippets with explanations
+
+## 3. Set Up Testing
+
+```bash
+# Add pytest
+rye add --dev pytest pytest-cov
+
+# Create tests directory
+mkdir -p tests
+
+# Add a simple test file
+touch tests/test_basic.py
+```
+
+## 4. Create a GitHub Repository
+
+1. Initialize git: `git init`
+2. Create `.gitignore` with Python patterns
+3. Make initial commit: `git commit -m "Initial commit"`
+4. Create repository on GitHub and push
+
+## 5. Set Up GitHub Actions for CI/CD
+
+Create `.github/workflows/python-package.yml`:
+
+```yaml
+name: Python package
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, '3.10']
+    steps:
+    
+
+---
+
 
 
 ---
