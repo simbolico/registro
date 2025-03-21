@@ -6,7 +6,7 @@ Welcome to the Registro examples directory! This folder contains examples demons
 
 - **basic_usage.py**: Introductory example using the @resource decorator for resource definition
 - **alternative_basic_usage.py**: Shows the ResourceTypeBaseModel inheritance pattern for resource definition
-- **custom_resource.py**: Advanced examples with custom validators, status values, and relationships
+- **custom_resource.py**: Advanced examples with custom validators, status values, relationships, and enhanced ResourceTypeBaseModel features
 - **integration_example.py**: Demonstrates integrating Registro with FastAPI for building APIs
 
 ### Running the Examples
@@ -61,16 +61,28 @@ Learn advanced Registro features:
 - Working with specialized status values
 - Managing relationships between different resource types
 - Extending the resource model with business logic
+- Using enhanced ResourceTypeBaseModel features (relationship helpers, field validators, to_dict)
 
-Example code:
+Example code for enhanced features:
 ```python
-class CustomResourceBase(ResourceTypeBaseModel, table=False):
-    """Abstract base for all custom resources"""
-    __status_values__ = {
-        "DRAFT", "ACTIVE", "ARCHIVED", "DEPRECATED"
-    }
+class Employee(ResourceTypeBaseModel, table=True):
+    """Employee resource demonstrating relationship helpers."""
+    __resource_type__ = "employee"
     
-    # Custom fields and methods...
+    # Fields...
+    department_rid: str = Field(foreign_key="department.rid", index=True)
+    department_api_name: str = Field(index=True)
+    
+    def link_department(self, session, department=None, 
+                       department_rid=None, department_api_name=None):
+        """Link employee to department using the enhanced link_resource method."""
+        return self.link_resource(
+            session=session,
+            model_class=Department,
+            rid_field="department_rid",
+            api_name_field="department_api_name",
+            api_name_value=department_api_name
+        )
 ```
 
 #### Integration Example
@@ -81,6 +93,27 @@ See how to integrate Registro with web frameworks:
 - Defining API endpoints for resource operations
 - Separating database models from API schemas
 - Implementing proper error handling
+
+### ResourceTypeBaseModel Enhanced Features
+
+ResourceTypeBaseModel now includes several powerful enhancements:
+
+1. **Simplified Initialization**
+   - Pass service and instance directly to constructor
+   - Automatically initializes with defaults if not provided
+
+2. **Relationship Helpers**
+   - `get_related_resource()`: Find related resources by RID or API name
+   - `link_resource()`: Link to another resource with a single method call
+   - Simplifies creating and maintaining relationships
+
+3. **Field Validation Utilities**
+   - `validate_identifier()`: Ensure field values are valid identifiers
+   - `validate_related_field_match()`: Compare fields between related resources
+
+4. **Enhanced Serialization**
+   - Improved `to_dict()` method with comprehensive metadata
+   - Configurable serialization for relationships
 
 ### Choosing an Approach
 
@@ -94,6 +127,7 @@ Registro offers two ways to create resources:
 2. **Inheritance approach** (`ResourceTypeBaseModel`):
    - More explicit
    - Works reliably when running scripts directly
+   - Access to enhanced relationship helpers and field validators
    - Example: `class Book(ResourceTypeBaseModel, table=True): __resource_type__ = "book" ...`
 
 Both approaches provide the same core functionality, so choose the one that best fits your coding style and requirements.

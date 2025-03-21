@@ -18,6 +18,8 @@ Registro is a resource management framework for Python applications that provide
 - **Status Management**: Built-in resource status tracking with customizable status values
 - **Relationship Handling**: Tools for defining and navigating resource relationships
 - **Metadata Management**: Automatic tracking of creation, update, and lifecycle events
+- **Relationship Helpers**: Simplified resource linking and relationship management
+- **Enhanced Serialization**: Comprehensive to_dict method with relationship support
 
 ## Installation
 
@@ -48,184 +50,119 @@ from sqlmodel import Field, Session, SQLModel, create_engine
 class Book(ResourceTypeBaseModel, table=True):
     __resource_type__ = "book"
     
-    # Define service and instance in __init__
-    def __init__(self, **data):
-        self._service = "library"
-        self._instance = "prod"
-        super().__init__(**data)
+    # Define fields
+    title: str = Field()
+    author: str = Field()
     
-    # Resource-specific fields
-    title: str = Field(index=True)
-    author: str = Field(index=True)
-    year: int = Field(default=2023)
+    # Optionally specify service and instance in constructor
+    def __init__(self, **data):
+        # You can now pass service and instance directly to constructor
+        super().__init__(**data)
 ```
 
 ### Decorator Approach
 
-Use the `@resource` decorator for concise, declarative definitions:
+Use the `@resource` decorator for a cleaner, more concise syntax:
 
 ```python
 from registro import resource
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field
 
-@resource(resource_type="book", service="library", instance="prod")
+@resource(resource_type="book")
 class Book:
-    # Resource-specific fields
-    title: str = Field(index=True)
-    author: str = Field(index=True)
-    year: int = Field(default=2023)
+    title: str = Field(...)
+    author: str = Field(...)
 ```
 
-### Working with Resources
+## Relationship Management
+
+ResourceTypeBaseModel provides powerful relationship management tools:
 
 ```python
-# Database setup
-engine = create_engine("sqlite:///library.db")
-SQLModel.metadata.create_all(engine)
+# Define models with relationships
+class Author(ResourceTypeBaseModel, table=True):
+    __resource_type__ = "author"
+    name: str = Field()
+    books: List["Book"] = Relationship(back_populates="author")
 
-# Create and save resources
-with Session(engine) as session:
-    # Create a book resource
-    book = Book(
-        title="The Hitchhiker's Guide to the Galaxy",
-        author="Douglas Adams",
-        year=1979,
-        api_name="hitchhikers-guide",  # Required for resource identification
-        display_name="Hitchhiker's Guide to the Galaxy"  # Human-readable name
-    )
-    session.add(book)
-    session.commit()
+class Book(ResourceTypeBaseModel, table=True):
+    __resource_type__ = "book"
+    title: str = Field()
+    author_rid: str = Field(foreign_key="author.rid")
+    author_api_name: str = Field()
+    author: Optional[Author] = Relationship(back_populates="books")
     
-    # Access resource properties
-    print(f"Book RID: {book.rid}")                     # ri.library.prod.book.01ABC123...
-    print(f"Service: {book.service}")                  # library
-    print(f"Resource Type: {book.resource_type}")      # book
-    
-    # Query resources
-    from sqlmodel import select
-    
-    # Find by API name (unique identifier)
-    result = session.exec(
-        select(Book).where(Book.api_name == "hitchhikers-guide")
-    ).first()
-    
-    # Find by RID (globally unique)
-    result = session.exec(
-        select(Book).where(Book.rid == "ri.library.prod.book.01ABC123...")
-    ).first()
-```
-
-## Implementation Approaches
-
-### When to Use the Inheritance Approach
-
-- For scripts that are run directly (`python script.py`)
-- When creating domain-specific base classes
-- For custom status values or lifecycle management
-- When you need explicit control over service and instance values
-
-### When to Use the Decorator Approach
-
-- For cleaner, more concise code
-- When the module is primarily imported by other modules
-- When using standard resource lifecycle patterns
-- For simpler resources without custom initialization needs
-
-## Advanced Features
-
-### Custom Status Values
-
-```python
-class InventoryItem(ResourceTypeBaseModel, table=False):
-    __status_values__ = {
-        "DRAFT", "IN_STOCK", "LOW_STOCK", 
-        "OUT_OF_STOCK", "DISCONTINUED"
-    }
-    
-    # Status-specific logic
-    def update_status_from_stock(self):
-        if self.stock_quantity <= 0:
-            self.status = "OUT_OF_STOCK"
-        elif self.stock_quantity < 10:
-            self.status = "LOW_STOCK"
-        else:
-            self.status = "IN_STOCK"
-```
-
-### Resource Relationships
-
-```python
-class Order(ResourceTypeBaseModel, table=True):
-    __resource_type__ = "order"
-    
-    # Foreign key to customer resource
-    customer_rid: str = Field(foreign_key="customer.rid")
-    
-    # Relationship definition
-    customer: "Customer" = Relationship(
-        sa_relationship_kwargs={"foreign_keys": "[Order.customer_rid]"}
-    )
-```
-
-### Custom Validation
-
-```python
-from pydantic import field_validator
-
-class Product(ResourceTypeBaseModel, table=True):
-    __resource_type__ = "product"
-    
-    sku: str = Field(index=True)
-    price: float = Field(default=0.0)
-    
-    @field_validator("sku")
-    @classmethod
-    def validate_sku(cls, v):
-        """Ensure SKU is uppercase and properly formatted."""
-        if not isinstance(v, str):
-            raise ValueError("SKU must be a string")
-        return v.upper()
-    
-    @field_validator("price")
-    @classmethod
-    def validate_price(cls, v):
-        """Ensure price is positive and properly formatted."""
-        if v < 0:
-            raise ValueError("Price cannot be negative")
-        return round(v, 2)  # Round to 2 decimal places
+    def link_author(self, session, author=None, author_rid=None, author_api_name=None):
+        """Link to author using enhanced link_resource helper."""
+        return self.link_resource(
+            session=session,
+            resource=author,
+            model_class=Author,
+            rid_field="author_rid",
+            api_name_field="author_api_name",
+            rid_value=author_rid,
+            api_name_value=author_api_name
+        )
 ```
 
 ## Examples
 
-The repository includes comprehensive examples demonstrating Registro's capabilities:
+See the `examples/` directory for complete working examples:
 
-- **basic_usage.py**: Fundamental resource creation and querying
-- **alternative_basic_usage.py**: Inheritance-based resource definition
-- **custom_resource.py**: Advanced resource types with relationships
-- **integration_example.py**: Using Registro with FastAPI
+- **Basic Usage**: Simple resource creation and querying
+- **Custom Resources**: Advanced resource types with relationships
+- **Enhanced Features**: Demonstrations of relationship helpers and validators
 
-Each example demonstrates both decorator and inheritance approaches and includes detailed documentation and best practices.
+## Advanced Features
 
-## Configuration
+### Resource Relationships
 
-Configure Registro's default service and instance through settings:
+ResourceTypeBaseModel includes helper methods for relationship management:
 
 ```python
-from registro.config import settings
+# Find related resources by RID or API name
+related_resource = book.get_related_resource(
+    Author, 
+    api_name="john-doe",
+    session=session
+)
 
-# Set global defaults
-settings.DEFAULT_SERVICE = "my-service"
-settings.DEFAULT_INSTANCE = "prod"
+# Link resources with a single method call
+book.link_resource(
+    session=session,
+    model_class=Author,
+    rid_field="author_rid",
+    api_name_field="author_api_name",
+    api_name_value="john-doe"
+)
 ```
 
-## Best Practices
+### Data Serialization
 
-1. **Use appropriate approach**: Choose decorator or inheritance based on your use case
-2. **Be consistent**: Use the same approach throughout your application
-3. **Include required fields**: Always set `api_name` and `display_name`
-4. **Handle direct execution**: Use conditional logic when scripts may be run directly
-5. **Implement validation**: Add field validators for domain-specific rules
-6. **Document resource types**: Include clear docstrings for all resource classes
+Enhanced serialization with the `to_dict()` method:
+
+```python
+# Get a dictionary representation of a resource
+book_dict = book.to_dict()
+print(book_dict["rid"])         # Resource ID
+print(book_dict["service"])     # Service name
+print(book_dict["title"])       # Model field
+```
+
+### Field Validation
+
+Utility methods for common validation tasks:
+
+```python
+@field_validator("code")
+@classmethod
+def validate_code(cls, v):
+    # Use built-in identifier validation
+    return cls.validate_identifier(v, "Department code")
+
+# Validate relationships
+cls.validate_related_field_match(author, "status", "ACTIVE")
+```
 
 ## License
 

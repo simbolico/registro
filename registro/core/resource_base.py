@@ -14,9 +14,11 @@ Key features:
 - Field-level validation and immutability
 - Efficient database indexing and constraints
 - Helper properties for resource data access
+- Relationship resolution and validation
+- Enhanced model serialization
 """
 
-from typing import Optional, ClassVar, Dict, Any, Type, TypeVar, Set, List
+from typing import Optional, ClassVar, Dict, Any, Type, TypeVar, Set, List, Union
 from sqlmodel import Field, Relationship, SQLModel, Session, select
 from sqlalchemy import event, Index
 from sqlalchemy.orm import declared_attr
@@ -355,6 +357,13 @@ class ResourceTypeBaseModel(ResourceBaseModel, ResourceRelationshipMixin, table=
     
     Concrete classes should inherit from this and set __resource_type__.
     
+    Features:
+    - Automatic Resource creation
+    - Resource metadata access (service, instance, etc.)
+    - Relationship helper methods
+    - Field validation utilities
+    - Enhanced serialization to dict
+    
     Example:
         ```python
         class Product(ResourceTypeBaseModel, table=True):
@@ -365,7 +374,182 @@ class ResourceTypeBaseModel(ResourceBaseModel, ResourceRelationshipMixin, table=
         ```
     """
     __resource_type__ = "resource"
-    pass
+    
+    def __init__(self, **data):
+        """
+        Initialize resource with service and instance information.
+        
+        Args:
+            **data: Resource data including optional service and instance
+        """
+        # Extract service and instance with defaults from data
+        self._service = data.pop("service", None) or settings.DEFAULT_SERVICE
+        self._instance = data.pop("instance", None) or settings.DEFAULT_INSTANCE
+        super().__init__(**data)
+    
+    def get_related_resource(self, 
+                            model_class: Type["ResourceTypeBaseModel"], 
+                            rid: Optional[str] = None, 
+                            api_name: Optional[str] = None,
+                            session: Session = None) -> Optional["ResourceTypeBaseModel"]:
+        """
+        Get a related resource by either RID or API name.
+        
+        Args:
+            model_class: The SQLModel class to query
+            rid: Optional resource ID to search by
+            api_name: Optional API name to search by
+            session: SQLModel session for database access
+            
+        Returns:
+            The found resource or None if not found
+            
+        Raises:
+            ValueError: If session is not provided
+        """
+        if session is None:
+            raise ValueError("Session is required to get related resources")
+            
+        if rid:
+            stmt = select(model_class).where(model_class.rid == rid)
+            return session.exec(stmt).first()
+        elif api_name:
+            stmt = select(model_class).where(model_class.api_name == api_name)
+            return session.exec(stmt).first()
+        return None
+    
+    def link_resource(self, 
+                     session: Session,
+                     resource: Optional["ResourceTypeBaseModel"] = None,
+                     model_class: Optional[Type["ResourceTypeBaseModel"]] = None,
+                     rid_field: Optional[str] = None,
+                     api_name_field: Optional[str] = None,
+                     rid_value: Optional[str] = None, 
+                     api_name_value: Optional[str] = None) -> "ResourceTypeBaseModel":
+        """
+        Link this resource to another resource based on provided information.
+        
+        This helper simplifies setting up relationships between resources.
+        
+        Args:
+            session: SQLModel session for database access
+            resource: Optional pre-fetched resource to link
+            model_class: Resource model class to query if resource not provided
+            rid_field: Field name on this resource to store the related resource's RID
+            api_name_field: Field name on this resource to store the related resource's API name
+            rid_value: RID to search by if resource not provided
+            api_name_value: API name to search by if resource not provided
+            
+        Returns:
+            The linked resource
+            
+        Raises:
+            ValueError: If the related resource cannot be found
+        """
+        # Use provided resource, or find by RID or API name
+        linked_resource = resource
+        if not linked_resource and model_class and session:
+            linked_resource = self.get_related_resource(
+                model_class, 
+                rid=rid_value, 
+                api_name=api_name_value, 
+                session=session
+            )
+            
+        if not linked_resource:
+            raise ValueError(f"Could not find related resource of type {model_class.__name__}")
+            
+        # Set relationship fields if provided
+        if rid_field and hasattr(self, rid_field):
+            setattr(self, rid_field, linked_resource.rid)
+            
+        if api_name_field and hasattr(self, api_name_field):
+            setattr(self, api_name_field, linked_resource.api_name)
+            
+        return linked_resource
+    
+    def to_dict(self, include_relationships: bool = False, exclude: Optional[Union[Set[str], Dict[str, Any]]] = None) -> Dict[str, Any]:
+        """
+        Convert resource to a dictionary representation.
+        
+        Args:
+            include_relationships: Whether to include relationship data
+            exclude: Fields to exclude from serialization
+            
+        Returns:
+            Dictionary representation of the resource
+        """
+        # Set up exclude set
+        exclude_set = {"resource"}
+        if exclude:
+            if isinstance(exclude, set):
+                exclude_set.update(exclude)
+            elif isinstance(exclude, dict):
+                for key, value in exclude.items():
+                    if value:
+                        exclude_set.add(key)
+        
+        # Get base fields from model_dump
+        data = self.model_dump(exclude=exclude_set)
+        
+        # Add resource metadata
+        data.update({
+            "rid": self.rid,
+            "service": self.service,
+            "instance": self.instance,
+            "resource_type": self.resource_type
+        })
+        
+        return data
+    
+    @classmethod
+    def validate_identifier(cls, value: str, field_name: str) -> str:
+        """
+        Validate that a field contains a valid identifier.
+        
+        Args:
+            value: The string value to validate
+            field_name: Name of the field being validated
+            
+        Returns:
+            The validated value
+            
+        Raises:
+            ValueError: If the value is not a valid identifier
+        """
+        if not value or not value.isidentifier():
+            raise ValueError(f"{field_name} must be a valid Python identifier")
+        return value
+        
+    @classmethod
+    def validate_related_field_match(cls, 
+                                    resource: "ResourceTypeBaseModel", 
+                                    field_name: str, 
+                                    expected_value: Any) -> "ResourceTypeBaseModel":
+        """
+        Validate that a field in a related resource matches the expected value.
+        
+        Args:
+            resource: The related resource to validate
+            field_name: Name of the field to check
+            expected_value: Expected value of the field
+            
+        Returns:
+            The validated resource
+            
+        Raises:
+            ValueError: If the field value doesn't match the expected value
+        """
+        if resource is None:
+            return None
+            
+        actual_value = getattr(resource, field_name, None)
+        if actual_value != expected_value:
+            raise ValueError(
+                f"Related resource {resource.__class__.__name__} has {field_name}='{actual_value}' "
+                f"but expected '{expected_value}'"
+            )
+        return resource
 
 # Types for type hints
 ResourceModelType = TypeVar('ResourceModelType', bound=ResourceTypeBaseModel) 

@@ -600,3 +600,158 @@ that best fits your use case and coding style.
 """
 
 print("\nCustom resource example completed successfully!")
+
+# APPROACH 4: Using enhanced ResourceTypeBaseModel features
+"""
+## Enhanced ResourceTypeBaseModel Features
+This approach demonstrates the enhanced features available in ResourceTypeBaseModel:
+1. Service/instance initialization
+2. Relationship helpers 
+3. Field validation utilities
+4. Enhanced to_dict serialization
+"""
+
+class Department(ResourceTypeBaseModel, table=True):
+    """Department resource with enhanced features."""
+    __resource_type__ = "department"
+    
+    name: str = Field(...)
+    code: str = Field(...)
+    
+    # Relationship fields
+    employees: List["Employee"] = Relationship(
+        back_populates="department",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "lazy": "selectin"
+        }
+    )
+    
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: str) -> str:
+        """Validate department code using helper method."""
+        return cls.validate_identifier(v, "Department code")
+
+class Employee(ResourceTypeBaseModel, table=True):
+    """Employee resource demonstrating relationship helpers."""
+    __resource_type__ = "employee"
+    
+    name: str = Field(...)
+    email: str = Field(...)
+    role: str = Field(...)
+    
+    # Relationship fields
+    department_rid: str = Field(foreign_key="department.rid", index=True)
+    department_api_name: str = Field(index=True)
+    department: Optional[Department] = Relationship(
+        back_populates="employees",
+        sa_relationship_kwargs={
+            "lazy": "joined"
+        }
+    )
+    
+    def link_department(self, session: Session, department: Optional[Department] = None, 
+                       department_rid: Optional[str] = None, department_api_name: Optional[str] = None) -> Department:
+        """Link employee to department using the enhanced link_resource method."""
+        return self.link_resource(
+            session=session,
+            resource=department,
+            model_class=Department,
+            rid_field="department_rid",
+            api_name_field="department_api_name",
+            rid_value=department_rid,
+            api_name_value=department_api_name
+        )
+
+def demonstrate_enhanced_features():
+    """Demonstrate the enhanced ResourceTypeBaseModel features."""
+    print("\nDemonstrating Enhanced ResourceTypeBaseModel Features:")
+    print("-" * 50)
+    
+    # Create engine and tables
+    engine = create_engine("sqlite:///:memory:", echo=False)
+    SQLModel.metadata.create_all(engine)
+    
+    with Session(engine) as session:
+        # Create a department with service/instance in constructor
+        hr_dept = Department(
+            service="company",
+            instance="main",
+            api_name="human-resources",
+            display_name="Human Resources",
+            name="Human Resources",
+            code="hr_dept"
+        )
+        session.add(hr_dept)
+        session.commit()
+        
+        # Create an employee
+        employee = Employee(
+            api_name="jane-smith",
+            display_name="Jane Smith",
+            name="Jane Smith",
+            email="jane@example.com",
+            role="HR Manager"
+        )
+        
+        # Link to department using enhanced helper method
+        employee.link_department(
+            session=session, 
+            department_api_name="human-resources"
+        )
+        
+        session.add(employee)
+        session.commit()
+        
+        # Retrieve employee to verify relationship
+        jane = session.exec(select(Employee).where(Employee.api_name == "jane-smith")).one()
+        
+        # Show enhanced to_dict output
+        print("Employee details:")
+        employee_dict = jane.to_dict()
+        print(f"  - Name: {employee_dict['name']}")
+        print(f"  - Email: {employee_dict['email']}")
+        print(f"  - Department API Name: {employee_dict['department_api_name']}")
+        print(f"  - RID: {employee_dict['rid']}")
+        print(f"  - Service: {employee_dict['service']}")
+        print(f"  - Instance: {employee_dict['instance']}")
+        
+        # Demonstrate get_related_resource
+        retrieved_dept = jane.get_related_resource(
+            Department, 
+            api_name="human-resources", 
+            session=session
+        )
+        
+        if retrieved_dept:
+            print("\nFound department using get_related_resource:")
+            print(f"  - Name: {retrieved_dept.name}")
+            print(f"  - Code: {retrieved_dept.code}")
+        
+        # Demonstrate validation
+        try:
+            # This should fail validation
+            invalid_dept = Department(
+                api_name="invalid-dept",
+                display_name="Invalid Department",
+                name="Invalid Department",
+                code="123-invalid"  # Contains hyphen, not a valid identifier
+            )
+            session.add(invalid_dept)
+            session.commit()
+        except ValueError as e:
+            print(f"\nValidation caught error: {e}")
+
+if __name__ == "__main__":
+    print("\n=== Running Custom Resource Example ===\n")
+    
+    # Run existing examples
+    demonstrate_basic_inventory_items()
+    demonstrate_custom_resource_base()
+    demonstrate_inventory_relationships()
+    
+    # Run new enhanced features example
+    demonstrate_enhanced_features()
+
+    print("\n=== Example Completed ===\n")

@@ -10,18 +10,20 @@ complete API for managing resources. It shows best practices for:
 2. Exposing resources via FastAPI endpoints
 3. Handling database sessions and relationships
 4. Separating database models from API schemas
+5. Using enhanced ResourceTypeBaseModel features
 
 ## Key Concepts
 - **FastAPI Integration**: Exposing Registro resources in web APIs
 - **ResourceTypeBaseModel Integration**: Using Registro models in FastAPI endpoints
 - **Pydantic Schemas**: Creating API schemas from Registro models
 - **CRUD Operations**: Complete Create, Read, Update, Delete API
+- **Enhanced Features**: Using relationship helpers and to_dict serialization
 """
 
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 # Add the base workspace directory to the Python path
 current_dir = Path(__file__).parent
@@ -60,13 +62,14 @@ def get_db():
     with Session(engine) as session:
         yield session
 
-# Define the Task resource model using ResourceTypeBaseModel
+# Define the Task resource model using ResourceTypeBaseModel with enhanced features
 class Task(ResourceTypeBaseModel, table=True):
     """
     Task model with resource capabilities.
     
     A task represents a unit of work in our task management system.
     Each task automatically becomes a resource with a unique RID.
+    This example demonstrates enhanced ResourceTypeBaseModel features.
     """
     __resource_type__ = "task"
     
@@ -75,18 +78,44 @@ class Task(ResourceTypeBaseModel, table=True):
     completed: bool = Field(default=False)
     priority: int = Field(default=1)  # 1=lowest, 5=highest
     
-    class Config:
-        """Pydantic config"""
-        schema_extra = {
-            "example": {
-                "api_name": "important-task",
-                "display_name": "Important Task",
-                "title": "Complete the project",
-                "description": "Finish all remaining tasks for the project",
-                "priority": 5,
-                "completed": False
-            }
-        }
+    # Relationship to project (could be added later)
+    project_rid: Optional[str] = Field(default=None)
+    project_api_name: Optional[str] = Field(default=None)
+    
+    def to_api_dict(self) -> Dict[str, Any]:
+        """
+        Convert to API-friendly dictionary using enhanced to_dict method.
+        Demonstrates custom usage of the enhanced to_dict method.
+        """
+        # Use the enhanced to_dict method with exclusions
+        data = self.to_dict(exclude={"project_rid"})
+        
+        # Add some computed fields
+        data["is_high_priority"] = self.priority >= 4
+        data["status_text"] = "Completed" if self.completed else "In Progress"
+        
+        return data
+
+# Add a method to get task by api_name using enhanced get_related_resource
+def get_task_by_api_name(api_name: str, session: Session) -> Optional[Task]:
+    """
+    Get a task by its API name using the enhanced get_related_resource method.
+    This demonstrates using the helper method statically.
+    
+    Args:
+        api_name: The API name to search for
+        session: SQLModel session
+        
+    Returns:
+        The found task or None
+    """
+    # Create a dummy task to use its methods
+    dummy = Task(api_name="dummy")
+    return dummy.get_related_resource(
+        model_class=Task,
+        api_name=api_name,
+        session=session
+    )
 
 # Create the database tables
 SQLModel.metadata.create_all(engine)
@@ -202,6 +231,25 @@ def toggle_task_status(task_rid: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(task)
     return task
+
+@app.get("/tasks/api/{api_name}", response_model=TaskRead)
+def read_task_by_api_name(api_name: str, db: Session = Depends(get_db)):
+    """Get a specific task by API name using the enhanced helper method"""
+    task = get_task_by_api_name(api_name, db)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+# Add a to_dict endpoint to demonstrate the enhanced serialization
+@app.get("/tasks/{task_rid}/dict")
+def get_task_dict(task_rid: str, db: Session = Depends(get_db)):
+    """Get a task's dictionary representation using the enhanced to_dict method"""
+    task = db.exec(select(Task).where(Task.rid == task_rid)).first()
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Use the custom to_api_dict method that builds on enhanced to_dict
+    return JSONResponse(content=task.to_api_dict())
 
 # Add root endpoint for API information
 @app.get("/")

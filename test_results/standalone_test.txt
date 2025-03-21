@@ -1,0 +1,24 @@
+Testing enhanced ResourceTypeBaseModel features...
+Department created:
+  Service: test-service
+  Instance: test-instance
+  RID: ri.test-service.test-instance.department.01JPV035FB8TYP9PHPEQQ96C5X
+
+Department to_dict output:
+  API Name: engineering
+  Service: test-service
+  Resource Type: department
+
+Linking employee to department...
+  Employee department_rid: ri.test-service.test-instance.department.01JPV035FB8TYP9PHPEQQ96C5X
+  Employee department_api_name: engineering
+
+Retrieved department using get_related_resource:
+  Name: Engineering
+  Code: eng_dept
+
+Testing field validation...
+  Valid code passed validation
+  Validation error caught: Department code must be a valid Python identifier
+
+All tests completed!
