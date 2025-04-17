@@ -1,3 +1,4 @@
+
 """
 Resource Identifier (RID) module for the Registro library.
 
@@ -28,10 +29,7 @@ from typing import (
 )
 from pydantic_core import core_schema
 from registro.config import settings
-from registro.models.patterns import (
-    SERVICE_PATTERN, INSTANCE_PATTERN, TYPE_PATTERN, LOCATOR_PATTERN,
-    RESERVED_WORDS, validate_string, get_rid_pattern
-)
+from registro.models.patterns import validate_string
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -88,59 +86,76 @@ def generate_ulid() -> str:
 class ConstrainedStr(str):
     """
     Base class for constrained string types with pattern and reserved word validation.
-    
+    Validation rules are fetched dynamically from registro.config.settings.
+
     Class Methods:
-        _get_pattern(): Get the compiled pattern from settings
-        _get_reserved_words(): Get reserved words minus allowed exceptions
-    
+        _get_pattern(): Get the compiled pattern from settings.
+        _get_reserved_words(): Get reserved words minus allowed exceptions.
+
     Raises:
-        ValueError: If validation fails
-        TypeError: If input is not a string
+        ValueError: If validation fails or pattern not found in settings.
+        TypeError: If input is not a string.
     """
     allowed_exceptions: ClassVar[Set[str]] = set()
-    
+
     @classmethod
     def _get_pattern(cls) -> Pattern[str]:
-        """Get the compiled pattern from settings."""
-        pattern = settings.get_compiled_pattern(cls.__name__.upper())
+        """Get the compiled pattern from settings based on class name."""
+        pattern_name = cls.__name__.replace("Str", "").upper()
+        pattern = settings.get_compiled_pattern(pattern_name)
         if not pattern:
-            raise ValueError(f"No pattern found for {cls.__name__}")
+            raise ValueError(f"Configuration error: Pattern '{pattern_name}' not found or invalid in settings for {cls.__name__}")
         return pattern
-        
+
     @classmethod
     def _get_reserved_words(cls) -> Set[str]:
-        """Get reserved words minus allowed exceptions."""
-        return settings.RESERVED_WORDS - cls.allowed_exceptions
-    
+        """Get the effective set of reserved words from settings minus exceptions."""
+        base_reserved_words = settings.RESERVED_WORDS
+        return base_reserved_words - cls.allowed_exceptions
+
     @classmethod
     def __get_pydantic_core_schema__(cls: Type[T], source_type: Any, handler: Any) -> core_schema.CoreSchema:
-        """Define Pydantic v2 validation schema."""
+        """Define Pydantic v2 validation schema using dynamic pattern."""
+        try:
+            pattern_regex_str = cls._get_pattern().pattern
+        except ValueError as e:
+            logger.error(f"Schema generation error for {cls.__name__}: {e}")
+            return core_schema.str_schema()
+
         return core_schema.with_info_after_validator_function(
             cls.validate,
-            core_schema.str_schema(pattern=cls.pattern.pattern),
+            core_schema.str_schema(pattern=pattern_regex_str),
             serialization=core_schema.str_schema(),
         )
-    
+
     @classmethod
     def validate(cls: Type[T], v: str, info: Any) -> str:
-        """Validate the input against pattern and reserved words."""
-        return validate_string(v, cls.pattern, cls.reserved_words, cls.__name__)
+        """Validate the input against dynamically fetched pattern and reserved words."""
+        pattern = cls._get_pattern()
+        reserved = cls._get_reserved_words()
+        return validate_string(v, pattern, reserved, cls.__name__)
 
 class ServiceStr(ConstrainedStr):
     """
     String type for the 'service' component of a RID.
-    
+    Uses pattern 'SERVICE' from settings. Allows settings.DEFAULT_SERVICE
+    even if it's in the reserved words list.
+
     Example:
         >>> ServiceStr.validate("users")  # Valid
         'users'
         >>> ServiceStr.validate("Users")  # Raises ValueError
     """
-    allowed_exceptions = {settings.DEFAULT_SERVICE}
+    @classmethod
+    def _get_reserved_words(cls) -> Set[str]:
+        """Get reserved words, allowing the configured DEFAULT_SERVICE."""
+        base_reserved_words = settings.RESERVED_WORDS
+        return base_reserved_words - {settings.DEFAULT_SERVICE}
 
 class InstanceStr(ConstrainedStr):
     """
     String type for the 'instance' component of a RID.
-    
+
     Example:
         >>> InstanceStr.validate("main")  # Valid
         'main'
@@ -151,42 +166,34 @@ class InstanceStr(ConstrainedStr):
 class TypeStr(ConstrainedStr):
     """
     String type for the 'type' component of a RID.
-    
+
     Example:
         >>> TypeStr.validate("user")  # Valid
         'user'
         >>> TypeStr.validate("User")  # Raises ValueError
     """
-    pattern: ClassVar[Pattern[str]] = TYPE_PATTERN
-    # Some resource types are commonly used and should be allowed
-    reserved_words: ClassVar[Set[str]] = RESERVED_WORDS - {
-        "resource", "object", "link", "action", "query"
-    }
+    allowed_exceptions = {"resource", "object", "link", "action", "query"}
 
 class LocatorStr(ConstrainedStr):
     """
     String type for the 'locator' component of a RID (ULID).
-    
+
     Example:
         >>> LocatorStr.validate("01GXHP6H7TW89BYT4S9C9JM7XX")  # Valid
         '01GXHP6H7TW89BYT4S9C9JM7XX'
         >>> LocatorStr.validate("invalid")  # Raises ValueError
     """
-    pattern: ClassVar[Pattern[str]] = LOCATOR_PATTERN
-    reserved_words: ClassVar[Optional[Set[str]]] = None
-    
     @classmethod
     def validate(cls: Type[LocatorStr], v: str, info: Any) -> str:
         """Validate the input is a valid ULID string."""
-        # Additional validation to ensure it's a valid ULID
         if not isinstance(v, str):
             raise TypeError(f"Expected string, got {type(v).__name__}")
         
-        if not cls.pattern.match(v):
+        pattern = cls._get_pattern()
+        if not pattern.match(v):
             raise ValueError(f"String '{v}' is not a valid ULID format")
         
         try:
-            # Try to parse it as a ULID - simplified to just check format
             if len(v) != 26:
                 raise ValueError("ULID must be 26 characters")
         except Exception as e:
@@ -200,9 +207,6 @@ class RID(str):
     
     An RID has the format: <prefix>.<service>.<instance>.<type>.<locator>
     Example: ri.users.main.user.01GXHP6H7TW89BYT4S9C9JM7XX
-    
-    Attributes:
-        pattern (ClassVar[Pattern[str]]): Regex pattern for RID validation
     """
     
     @classmethod
@@ -210,7 +214,7 @@ class RID(str):
         """Define Pydantic v2 validation schema."""
         return core_schema.with_info_after_validator_function(
             cls.validate,
-            core_schema.str_schema(pattern=get_rid_pattern().pattern),
+            core_schema.str_schema(),
             serialization=core_schema.str_schema(),
         )
     
@@ -233,22 +237,19 @@ class RID(str):
         if not isinstance(v, str):
             raise TypeError(f"Expected string, got {type(v).__name__}")
         
-        rid_pattern = get_rid_pattern()
-        if not rid_pattern.match(v):
-            raise ValueError(f"Invalid RID format: '{v}' must match pattern {rid_pattern.pattern}")
+        rid_pattern = settings.get_compiled_pattern("RID")
+        if not rid_pattern or not rid_pattern.match(v):
+            raise ValueError(f"Invalid RID format: '{v}'")
         
-        # Validate components
         parts = v.split('.')
         if len(parts) != 5:
             raise ValueError(f"RID must have 5 parts, got {len(parts)}")
         
         prefix, service, instance, type_, locator = parts
         
-        # Prefix check
         if prefix != settings.RID_PREFIX:
             raise ValueError(f"RID prefix '{prefix}' must be '{settings.RID_PREFIX}'")
         
-        # Validate each component
         ServiceStr.validate(service, info)
         InstanceStr.validate(instance, info)
         TypeStr.validate(type_, info)
@@ -279,22 +280,18 @@ class RID(str):
         Raises:
             ValueError: If any component validation fails
         """
-        # Use defaults from settings if not provided
         service = service or settings.DEFAULT_SERVICE
         instance = instance or settings.DEFAULT_INSTANCE
         
-        # Validate components
         service = ServiceStr.validate(service, None)
         instance = InstanceStr.validate(instance, None)
         type_ = TypeStr.validate(type_, None)
         
-        # Generate ULID if not provided
         if locator is None:
             locator = generate_ulid()
         else:
             locator = LocatorStr.validate(locator, None)
         
-        # Construct the RID
         rid = f"{settings.RID_PREFIX}.{service}.{instance}.{type_}.{locator}"
         
         return rid
@@ -326,4 +323,4 @@ class RID(str):
             'instance': parts[2],
             'type': parts[3],
             'locator': parts[4]
-        } 
+        }
