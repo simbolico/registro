@@ -1,0 +1,163 @@
+---
+
+**Task 5: Refactor `LocatorStr`**
+
+*   **File:** `registro/models/rid.py`
+*   **Why:** Remove hardcoded rules. Ensure its specific ULID validation happens *after* the base string validation (which checks the pattern and reserved words dynamically).
+*   **How:**
+    1.  Remove `pattern` and `reserved_words` ClassVars.
+    2.  Set `allowed_exceptions` to an empty set (no reserved words are allowed exceptions for locators).
+    3.  Override the `validate` method. Inside the override:
+        *   Call the *base class* `validate` method first using `super().validate(v, info)` to perform the dynamic pattern/reserved word check.
+        *   *Then*, add the specific ULID format/parsing check in a `try...except` block.
+
+*   **Code Changes:**
+
+    ```python
+    class LocatorStr(ConstrainedStr):
+        """
+        String type for the 'locator' component of a RID (ULID).
+        Uses pattern 'LOCATOR' from settings. Performs additional ULID validation.
+    
+        Example:
+            >>> LocatorStr.validate("01GXHP6H7TW89BYT4S9C9JM7XX")  # Valid
+            '01GXHP6H7TW89BYT4S9C9JM7XX'
+            >>> LocatorStr.validate("invalid")  # Raises ValueError
+        """
+        # REMOVE these lines:
+        # pattern: ClassVar[Pattern[str]] = LOCATOR_PATTERN
+        # reserved_words: ClassVar[Optional[Set[str]]] = None
+    
+        # Locators typically have no exceptions to reserved words
+        allowed_exceptions: ClassVar[Set[str]] = set()
+    
+        @classmethod
+        def validate(cls: Type[LocatorStr], v: str, info: Any) -> str:
+            """Validate the input is a valid ULID string using dynamic pattern/reserved words first."""
+            # Step 1: Perform base validation (pattern, reserved words) using dynamic rules
+            # Note: We call the base class validate directly here
+            validated_str = ConstrainedStr.validate.__func__(cls, v, info) # Use __func__ to call base directly if needed
+            # Or simpler if super() works correctly in this context:
+            # validated_str = super().validate(v, info) # Might require adjusting base validate signature if using super()
+            # Safest is often to re-implement the call to validate_string if super() is tricky:
+            # validated_str = validate_string(v, cls._get_pattern(), cls._get_reserved_words(), cls.__name__)
+    
+            # Step 2: Perform additional ULID-specific validation
+            if not isinstance(validated_str, str): # Should already be caught by validate_string
+                 raise TypeError(f"Expected string, got {type(validated_str).__name__}")
+    
+            # No need to re-check pattern match here, base validate did it.
+            # Just check the ULID parsing/logic.
+            try:
+                # Example: Use ulid library for robust check if available
+                ulid.parse(validated_str) # ulid.parse checks format and validity
+                # Or fallback to simple length check if ulid lib isn't used everywhere
+                # if len(validated_str) != 26:
+                #     raise ValueError("ULID must be 26 characters")
+            except ValueError as e: # Catch potential parsing errors from ulid.parse
+                raise ValueError(f"Invalid ULID '{validated_str}': {e}")
+            except Exception as e: # Catch any other unexpected errors
+                raise ValueError(f"Invalid ULID '{validated_str}': {e}")
+    
+            return validated_str
+    
+    ```
+    *Self-Correction:* Calling `super().validate` within a classmethod override can be tricky. A more reliable pattern is often to call the underlying utility function (`validate_string`) directly with the dynamically fetched rules, *then* add the specific checks. Let's adjust `LocatorStr.validate` for clarity:
+
+    ```python
+    class LocatorStr(ConstrainedStr):
+        # ... (previous class definition parts) ...
+        allowed_exceptions: ClassVar[Set[str]] = set() # Explicitly no exceptions
+
+        @classmethod
+        def validate(cls: Type[LocatorStr], v: str, info: Any) -> str:
+            """Validate the input is a valid ULID string using dynamic pattern/reserved words first."""
+            # Step 1: Perform base validation directly using the utility function
+            pattern = cls._get_pattern()
+            reserved = cls._get_reserved_words()
+            validated_str = validate_string(v, pattern, reserved, cls.__name__)
+
+            # Step 2: Perform additional ULID-specific validation
+            try:
+                # Use ulid library for robust check
+                ulid.parse(validated_str)
+            except ValueError as e: # Catch potential parsing errors from ulid.parse
+                raise ValueError(f"Invalid ULID '{validated_str}': {e}")
+            except Exception as e: # Catch any other unexpected errors (like library not installed)
+                # Fallback or re-raise depending on requirements
+                # Simple length check as fallback:
+                if len(validated_str) != 26:
+                     raise ValueError(f"Invalid ULID '{validated_str}': Must be 26 characters. Parse error: {e}")
+                # If ulid is mandatory, just re-raise: raise ValueError(f"Invalid ULID '{validated_str}': {e}")
+
+            return validated_str
+    ```
+
+---
+
+**Task 6: Update `get_rid_pattern()` (Now in `rid.py`)**
+
+*   **File:** `registro/models/rid.py`
+*   **Why:** This function generates the regex for validating a *full* RID. It needs to use the pattern *strings* fetched from `settings`.
+*   **How:**
+    1.  Define this function within `rid.py` (it was previously in `patterns.py`).
+    2.  Import `re` and `settings`.
+    3.  Fetch the *string* representation of each component pattern from `settings`.
+    4.  Use `re.escape` for the prefix.
+    5.  Construct the full regex string using an f-string, removing the start (`^`) and end (`$`) anchors from the component patterns before embedding them.
+    6.  Compile the final pattern using `re.compile`.
+
+*   **Code Changes (Add this function to `rid.py`):**
+
+    ```python
+    # Add this function to registro/models/rid.py
+    import re
+    from registro.config import settings
+    
+    def get_rid_pattern() -> Pattern[str]:
+        """
+        Generate a regex pattern for complete Resource Identifiers (RIDs).
+        
+        Uses the current RID_PREFIX and component patterns from settings to create 
+        a pattern that matches: <prefix>.<service>.<instance>.<type>.<locator>
+        
+        Returns:
+            Pattern[str]: Compiled regex pattern for RIDs
+            
+        Raises:
+            ValueError: If any required pattern string is missing in settings.
+        """
+        prefix = re.escape(settings.RID_PREFIX)
+        
+        # Fetch pattern strings - handle None cases
+        service_p = settings.get_pattern_string("SERVICE")
+        instance_p = settings.get_pattern_string("INSTANCE")
+        type_p = settings.get_pattern_string("TYPE")
+        locator_p = settings.get_pattern_string("LOCATOR")
+    
+        if not all([service_p, instance_p, type_p, locator_p]):
+            missing = [name for name, p in [("SERVICE", service_p), ("INSTANCE", instance_p), ("TYPE", type_p), ("LOCATOR", locator_p)] if not p]
+            raise ValueError(f"Configuration error: Missing pattern strings in settings for: {', '.join(missing)}")
+            
+        # Remove anchors from component patterns before combining
+        service_p = service_p.strip('^$')
+        instance_p = instance_p.strip('^$')
+        type_p = type_p.strip('^$')
+        locator_p = locator_p.strip('^$')
+        
+        # Construct the full pattern string
+        full_pattern_str = rf"^{prefix}\.({service_p})\.({instance_p})\.({type_p})\.({locator_p})$"
+        
+        try:
+            return re.compile(full_pattern_str)
+        except re.error as e:
+            raise ValueError(f"Failed to compile dynamic RID pattern: {e}\nPattern: {full_pattern_str}")
+
+    # Ensure this function is imported where needed (e.g., in RID class methods)
+    # Example import within rid.py itself if needed by RID class:
+    # from . import get_rid_pattern # Or adjust based on final structure
+    ```
+
+---
+
+After implementing these changes, the `registro` library will fetch all its validation rules dynamically from the `settings` object, making it fully configurable for different projects like `ontologia`. Remember to run tests and update documentation.
