@@ -1,0 +1,141 @@
+---
+
+**Task 1: Refactor `ConstrainedStr` Base Class**
+
+*   **File:** `registro/models/rid.py`
+*   **Why:** To remove hardcoded validation rules and implement methods that dynamically fetch patterns and reserved words from `settings`. This makes the base class configurable.
+*   **How:**
+    1.  Remove the existing `pattern` and `reserved_words` ClassVars.
+    2.  Add a default `allowed_exceptions` ClassVar (usually empty).
+    3.  Implement `_get_pattern` method to fetch the compiled pattern from `settings`.
+    4.  Implement `_get_reserved_words` method to get the effective set of reserved words (base set from `settings` minus class-specific exceptions).
+    5.  Update `__get_pydantic_core_schema__` to use `_get_pattern`.
+    6.  Update `validate` to use `_get_pattern` and `_get_reserved_words` when calling `validate_string`.
+
+*   **Code Changes:**
+
+    ```python
+    # Near the top of the file, ensure these imports exist
+    import re
+    from typing import (
+        Optional, Dict, ClassVar, Set, Pattern, Final, Type, Any, Union, TypeVar
+    )
+    from pydantic_core import core_schema
+    from registro.config import settings
+    from registro.models.patterns import validate_string # Keep validate_string import
+    
+    # ... (keep other imports and generate_ulid function) ...
+    
+    T = TypeVar('T', bound='ConstrainedStr')
+    
+    class ConstrainedStr(str):
+        """
+        Base class for constrained string types with pattern and reserved word validation.
+        Validation rules are fetched dynamically from registro.config.settings.
+    
+        Class Methods:
+            _get_pattern(): Get the compiled pattern from settings.
+            _get_reserved_words(): Get reserved words minus allowed exceptions.
+    
+        Raises:
+            ValueError: If validation fails or pattern not found in settings.
+            TypeError: If input is not a string.
+        """
+        # Default: subclasses can override this to specify words that ARE allowed
+        # even if they are in settings.RESERVED_WORDS
+        allowed_exceptions: ClassVar[Set[str]] = set()
+    
+        # REMOVE these lines:
+        # pattern: ClassVar[Pattern[str]]
+        # reserved_words: ClassVar[Optional[Set[str]]] = None
+    
+        @classmethod
+        def _get_pattern(cls) -> Pattern[str]:
+            """Get the compiled pattern from settings based on class name."""
+            # Convention: Class 'ServiceStr' uses pattern name 'SERVICE' in settings
+            pattern_name = cls.__name__.replace("Str", "").upper()
+            pattern = settings.get_compiled_pattern(pattern_name)
+            if not pattern:
+                # Provide a more specific error message
+                raise ValueError(f"Configuration error: Pattern '{pattern_name}' not found or invalid in settings for {cls.__name__}")
+            return pattern
+    
+        @classmethod
+        def _get_reserved_words(cls) -> Set[str]:
+            """Get the effective set of reserved words from settings minus exceptions."""
+            # Fetch the base set dynamically from settings
+            base_reserved_words = settings.RESERVED_WORDS
+            # Subtract words specifically allowed by this subclass
+            return base_reserved_words - cls.allowed_exceptions
+    
+        @classmethod
+        def __get_pydantic_core_schema__(cls: Type[T], source_type: Any, handler: Any) -> core_schema.CoreSchema:
+            """Define Pydantic v2 validation schema using dynamic pattern."""
+            try:
+                # Fetch the pattern dynamically for the schema constraint
+                pattern_regex_str = cls._get_pattern().pattern
+            except ValueError as e:
+                # Handle potential configuration errors during schema generation
+                logger.error(f"Schema generation error for {cls.__name__}: {e}")
+                # Fallback or re-raise, depending on desired strictness
+                # Falling back to a basic string schema if pattern fails
+                return core_schema.str_schema() 
+                # Or re-raise: raise e
+    
+            return core_schema.with_info_after_validator_function(
+                cls.validate,
+                # Use the dynamically fetched pattern string here
+                core_schema.str_schema(pattern=pattern_regex_str),
+                serialization=core_schema.str_schema(),
+            )
+    
+        @classmethod
+        def validate(cls: Type[T], v: str, info: Any) -> str:
+            """Validate the input against dynamically fetched pattern and reserved words."""
+            # Fetch rules dynamically and call the validation utility
+            pattern = cls._get_pattern()
+            reserved = cls._get_reserved_words()
+            return validate_string(v, pattern, reserved, cls.__name__)
+    
+    # ... rest of the file ...
+    ```
+
+---
+
+**Task 2: Refactor `ServiceStr`**
+
+*   **File:** `registro/models/rid.py`
+*   **Why:** To remove hardcoded rules and make it rely on the base class logic and `settings`. Define specific allowed exceptions if necessary.
+*   **How:**
+    1.  Remove `pattern` and `reserved_words` ClassVars.
+    2.  Define `allowed_exceptions` to include *only* the `DEFAULT_SERVICE` value fetched dynamically from settings.
+
+*   **Code Changes:**
+
+    ```python
+    class ServiceStr(ConstrainedStr):
+        """
+        String type for the 'service' component of a RID.
+        Uses pattern 'SERVICE' from settings. Allows settings.DEFAULT_SERVICE
+        even if it's in the reserved words list.
+    
+        Example:
+            >>> ServiceStr.validate("users")  # Valid
+            'users'
+            >>> ServiceStr.validate("Users")  # Raises ValueError
+        """
+        # REMOVE these lines:
+        # pattern: ClassVar[Pattern[str]] = SERVICE_PATTERN
+        # reserved_words: ClassVar[Set[str]] = RESERVED_WORDS - {settings.DEFAULT_SERVICE}
+    
+        # Define allowed exceptions dynamically
+        @classmethod
+        def _get_reserved_words(cls) -> Set[str]:
+            """Get reserved words, allowing the configured DEFAULT_SERVICE."""
+            base_reserved_words = settings.RESERVED_WORDS
+            # Dynamically exclude the default service name
+            return base_reserved_words - {settings.DEFAULT_SERVICE}
+    
+    ```
+
+---
