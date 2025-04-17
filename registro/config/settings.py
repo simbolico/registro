@@ -1,147 +1,136 @@
+
 """
-Centralized configuration for the Registro library.
+Configuration settings for the Registro library.
 
-This module provides a unified interface for configuring Registro through
-environment variables or programmatic settings. It serves as the source of
-truth for library-wide settings.
-
-The settings can be configured in these ways (in order of precedence):
-1. Direct modification of Settings attributes
-2. Environment variables
-3. Default values
-
-Usage:
-    from registro.config import settings
-    
-    # Read a setting
-    rid_prefix = settings.RID_PREFIX
-    
-    # Change a setting programmatically
-    settings.RID_PREFIX = "custom"
-    
-    # Environment variable override (set before import)
-    # export REGISTRO_RID_PREFIX="custom"
+This module provides centralized configuration management for Registro,
+including pattern strings, compiled patterns, and reserved words.
 """
 
-import logging
 import os
-from typing import Dict, Any, Optional
-from zoneinfo import ZoneInfo, available_timezones
+import re
+import json
+from typing import Dict, Optional, Pattern, Set
+from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
-
-class Settings:
+class Settings(BaseModel):
     """
-    Configuration settings for the Registro library.
+    Configuration settings for Registro.
     
-    Attributes:
-        RID_PREFIX (str): Prefix for resource identifiers (default: "ri")
-        DEFAULT_SERVICE (str): Default service name (default: "registro")
-        DEFAULT_INSTANCE (str): Default instance name (default: "main")
-        TIMEZONE (ZoneInfo): Default timezone for timestamps (default: UTC)
+    Handles pattern strings, compiled patterns, reserved words,
+    and service/instance defaults.
     """
     
-    _instance = None
+    # Default RID components
+    RID_PREFIX: str = "ri"
+    DEFAULT_SERVICE: str = "default"
+    DEFAULT_INSTANCE: str = "prod"
     
-    def __new__(cls):
-        """Implement singleton pattern."""
-        if cls._instance is None:
-            cls._instance = super(Settings, cls).__new__(cls)
-            cls._instance._initialize()
-        return cls._instance
+    # Pattern strings with defaults
+    _pattern_rid_prefix: str = r"^[a-z][a-z0-9-]{0,9}$"
+    _pattern_service: str = r"^[a-z][a-z-]{0,49}$"
+    _pattern_instance: str = r"^[a-z0-9][a-z0-9-]{0,49}$"
+    _pattern_type: str = r"^[a-z][a-z-]{1,49}$"
+    _pattern_locator: str = r"^[0-9A-HJ-KM-NPQRSTVWXYZ]{26}$"
+    _pattern_api_name_object_type: str = r"^(?=.{1,100}$)[A-Z][A-Za-z0-9]*$"
+    _pattern_api_name_link_type: str = r"^(?=.{1,100}$)[a-z][A-Za-z0-9]*$"
+    _pattern_api_name_action_type: str = r"^(?=.{1,100}$)[A-Za-z][A-Za-z0-9_-]*$"
+    _pattern_api_name_query_type: str = r"^(?=.{1,100}$)[a-z][A-Za-z0-9]*$"
     
-    def _initialize(self):
-        """Initialize settings from environment variables or defaults."""
-        # RID Prefix - used in all resource identifiers
-        self._rid_prefix = os.getenv("REGISTRO_RID_PREFIX", "ri")
-        
-        # Default service and instance names
-        self._default_service = os.getenv("REGISTRO_DEFAULT_SERVICE", "registro")
-        self._default_instance = os.getenv("REGISTRO_DEFAULT_INSTANCE", "main")
-        
-        # Default timezone
-        tz_name = os.getenv("REGISTRO_TIMEZONE", "UTC")
-        try:
-            self._timezone = ZoneInfo(tz_name)
-        except Exception as e:
-            logger.warning(f"Invalid timezone {tz_name}, falling back to UTC: {e}")
-            self._timezone = ZoneInfo("UTC")
-    
-    @property
-    def RID_PREFIX(self) -> str:
-        """Get the RID prefix."""
-        return self._rid_prefix
-    
-    @RID_PREFIX.setter
-    def RID_PREFIX(self, value: str):
-        """Set the RID prefix, with validation."""
-        if not isinstance(value, str):
-            raise TypeError(f"RID_PREFIX must be a string, got {type(value).__name__}")
-        if not value.isalnum() or not value.islower() or len(value) > 10:
-            raise ValueError("RID_PREFIX must be alphanumeric, lowercase, and max 10 chars")
-        self._rid_prefix = value
-    
-    @property
-    def DEFAULT_SERVICE(self) -> str:
-        """Get the default service name."""
-        return self._default_service
-    
-    @DEFAULT_SERVICE.setter
-    def DEFAULT_SERVICE(self, value: str):
-        """Set the default service name, with validation."""
-        if not isinstance(value, str):
-            raise TypeError(f"DEFAULT_SERVICE must be a string, got {type(value).__name__}")
-        if not value.islower() or not value.replace("-", "").isalnum():
-            raise ValueError("DEFAULT_SERVICE must contain only lowercase letters, numbers, and hyphens")
-        self._default_service = value
-    
-    @property
-    def DEFAULT_INSTANCE(self) -> str:
-        """Get the default instance name."""
-        return self._default_instance
-    
-    @DEFAULT_INSTANCE.setter
-    def DEFAULT_INSTANCE(self, value: str):
-        """Set the default instance name, with validation."""
-        if not isinstance(value, str):
-            raise TypeError(f"DEFAULT_INSTANCE must be a string, got {type(value).__name__}")
-        if not value.islower() or not value.replace("-", "").isalnum():
-            raise ValueError("DEFAULT_INSTANCE must contain only lowercase letters, numbers, and hyphens")
-        self._default_instance = value
-    
-    @property
-    def TIMEZONE(self) -> ZoneInfo:
-        """Get the timezone."""
-        return self._timezone
-    
-    @TIMEZONE.setter
-    def TIMEZONE(self, value: str):
-        """Set the timezone, with validation."""
-        if isinstance(value, str):
-            try:
-                self._timezone = ZoneInfo(value)
-            except Exception as e:
-                raise ValueError(f"Invalid timezone {value}: {e}")
-        elif isinstance(value, ZoneInfo):
-            self._timezone = value
-        else:
-            raise TypeError(f"TIMEZONE must be a string or ZoneInfo, got {type(value).__name__}")
-    
-    def as_dict(self) -> Dict[str, Any]:
-        """Return all settings as a dictionary."""
-        return {
-            "RID_PREFIX": self._rid_prefix,
-            "DEFAULT_SERVICE": self._default_service,
-            "DEFAULT_INSTANCE": self._default_instance,
-            "TIMEZONE": str(self._timezone),
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._compiled_patterns_cache: Dict[str, Pattern[str]] = {}
+        self._reserved_words: Set[str] = {
+            "new", "edit", "delete", "list", "search", "create",
+            "update", "remove", "get", "set", "add", "clear"
         }
-    
-    def reset(self):
-        """Reset all settings to their default/environment values."""
+        self._api_name_patterns_by_type: Dict[str, str] = {
+            "object-type": "API_NAME_OBJECT_TYPE",
+            "link-type": "API_NAME_LINK_TYPE", 
+            "action-type": "API_NAME_ACTION_TYPE",
+            "query-type": "API_NAME_QUERY_TYPE",
+            "default": "API_NAME_ACTION_TYPE"
+        }
         self._initialize()
 
-# Create a singleton instance
-settings = Settings()
+    def _initialize(self) -> None:
+        """Initialize settings from environment variables."""
+        # Load RID components
+        self.RID_PREFIX = os.getenv("REGISTRO_RID_PREFIX", self.RID_PREFIX)
+        self.DEFAULT_SERVICE = os.getenv("REGISTRO_DEFAULT_SERVICE", self.DEFAULT_SERVICE)
+        self.DEFAULT_INSTANCE = os.getenv("REGISTRO_DEFAULT_INSTANCE", self.DEFAULT_INSTANCE)
+        
+        # Load pattern strings
+        for pattern_name in [name[8:] for name in vars(self) if name.startswith("_pattern_")]:
+            env_var = f"REGISTRO_PATTERN_{pattern_name.upper()}"
+            if env_value := os.getenv(env_var):
+                setattr(self, f"_pattern_{pattern_name}", env_value)
+        
+        # Load reserved words
+        if reserved_words := os.getenv("REGISTRO_RESERVED_WORDS"):
+            try:
+                self._reserved_words = set(word.strip() for word in reserved_words.split(","))
+            except Exception:
+                pass
+                
+        # Load API name pattern mapping
+        if mapping := os.getenv("REGISTRO_API_NAME_MAPPING"):
+            try:
+                self._api_name_patterns_by_type.update(json.loads(mapping))
+            except Exception:
+                pass
 
-# Export the settings instance
-__all__ = ["settings"] 
+    def get_pattern_string(self, name: str) -> Optional[str]:
+        """Get the pattern string for a given name."""
+        attr_name = f"_pattern_{name.lower()}"
+        return getattr(self, attr_name, None)
+
+    def get_compiled_pattern(self, name: str) -> Optional[Pattern[str]]:
+        """Get or compile the regex pattern for a given name."""
+        if name in self._compiled_patterns_cache:
+            return self._compiled_patterns_cache[name]
+            
+        if pattern_str := self.get_pattern_string(name):
+            try:
+                pattern = re.compile(pattern_str)
+                self._compiled_patterns_cache[name] = pattern
+                return pattern
+            except re.error:
+                return None
+        return None
+
+    def set_pattern(self, name: str, pattern_string: str) -> None:
+        """Set a pattern string and clear its compiled cache."""
+        attr_name = f"_pattern_{name.lower()}"
+        if hasattr(self, attr_name):
+            try:
+                # Validate pattern can be compiled
+                re.compile(pattern_string)
+                setattr(self, attr_name, pattern_string)
+                self._compiled_patterns_cache.pop(name.upper(), None)
+            except re.error as e:
+                raise ValueError(f"Invalid pattern string for {name}: {e}")
+        else:
+            raise ValueError(f"Unknown pattern name: {name}")
+
+    @property
+    def RESERVED_WORDS(self) -> Set[str]:
+        """Get the set of reserved words."""
+        return self._reserved_words.copy()
+
+    @RESERVED_WORDS.setter
+    def RESERVED_WORDS(self, words: Set[str]) -> None:
+        """Set the reserved words."""
+        self._reserved_words = set(words)
+
+    @property
+    def API_NAME_PATTERNS_BY_TYPE(self) -> Dict[str, str]:
+        """Get the API name pattern mapping."""
+        return self._api_name_patterns_by_type.copy()
+
+    @API_NAME_PATTERNS_BY_TYPE.setter 
+    def API_NAME_PATTERNS_BY_TYPE(self, mapping: Dict[str, str]) -> None:
+        """Set the API name pattern mapping."""
+        self._api_name_patterns_by_type = dict(mapping)
+
+# Create global settings instance
+settings = Settings()
