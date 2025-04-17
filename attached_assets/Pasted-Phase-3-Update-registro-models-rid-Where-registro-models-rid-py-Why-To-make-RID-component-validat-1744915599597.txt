@@ -1,0 +1,42 @@
+Phase 3: Update registro.models.rid
+Where: registro/models/rid.py
+Why: To make RID component validation use the configured patterns and reserved words.
+How:
+Import settings: Add from registro.config import settings.
+Update ConstrainedStr Subclasses (ServiceStr, InstanceStr, TypeStr, LocatorStr):
+Remove the hardcoded pattern and reserved_words ClassVars.
+Implement _get_pattern(cls) -> Pattern[str] classmethod: Fetches the appropriate compiled pattern from settings (e.g., settings.get_compiled_pattern("SERVICE")). Raise ValueError if not found.
+Implement _get_reserved_words(cls) -> Set[str] classmethod:
+Define allowed_exceptions: ClassVar[Set[str]] = set() on each subclass as needed (e.g., {"ontology"} on ServiceStr).
+Fetch settings.RESERVED_WORDS.
+Return settings.RESERVED_WORDS - cls.allowed_exceptions. For LocatorStr, it might just return an empty set or None.
+Modify validate(cls, v, info): Call validate_string(v, cls._get_pattern(), cls._get_reserved_words(), cls.__name__). Adapt LocatorStr.validate if it has extra logic beyond the basic pattern/reserved word check.
+Modify __get_pydantic_core_schema__: Use cls._get_pattern().pattern for the schema's pattern string.
+Update RID Class:
+Modify validate(cls, v, info):
+Get the dynamic RID pattern string using settings: prefix = re.escape(settings.RID_PREFIX); service_p = settings.get_pattern_string("SERVICE"); ... Reconstruct the full pattern string dynamically. Compile it: rid_pattern = re.compile(full_pattern_string).
+Validate v against this rid_pattern.
+When validating components (prefix, service, instance, type_, locator), call the respective ConstrainedStr.validate methods (e.g., ServiceStr.validate(service, info)).
+Modify generate(...):
+Fetch defaults for service and instance from settings.DEFAULT_SERVICE and settings.DEFAULT_INSTANCE.
+Validate input service, instance, type_, locator using their respective ConstrainedStr.validate methods.
+Construct the RID string using settings.RID_PREFIX.
+Modify __get_pydantic_core_schema__: Generate the pattern dynamically based on settings as done in validate.
+Update RID Prefix Validation: Modify the module-level validation check for settings.RID_PREFIX (currently in rid.py's global scope) to use settings.get_compiled_pattern("RID_PREFIX").
+Phase 4: Update registro.core.resource_base
+Where: registro/core/resource_base.py
+Why: To make API name validation use the configured mapping and patterns.
+How:
+Import settings: Add from registro.config import settings.
+Modify validate_api_name(cls, v, info):
+Get resource_type from rid or cls.__resource_type__.
+Look up the pattern_name in settings.API_NAME_PATTERNS_BY_TYPE using resource_type (handle default).
+Fetch the compiled pattern using settings.get_compiled_pattern(pattern_name). Handle errors if the pattern isn't found in settings.
+Call validate_string(v, pattern, settings.RESERVED_WORDS, "api_name").
+Phase 5: Update registro.core.resource
+Where: registro/core/resource.py
+Why: To use configured defaults and prefix.
+How:
+Import settings: Add from registro.config import settings.
+Modify __init__ and generate_rid: Use settings.DEFAULT_SERVICE, settings.DEFAULT_INSTANCE, and settings.RID_PREFIX instead of hardcoded fallbacks or the old os.getenv.
+Modify check_rid_consistency: Compare rid_parts[0] against settings.RID_PREFIX.
