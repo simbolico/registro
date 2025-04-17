@@ -300,15 +300,13 @@ class ResourceBaseModel(TimestampedModel, table=False):
             if len(parts) >= 4:
                 resource_type = parts[3]
         
-        patterns = {
-            "object-type": OBJECT_TYPE_API_NAME_PATTERN,
-            "link-type": LINK_TYPE_API_NAME_PATTERN,
-            "action-type": ACTION_TYPE_API_NAME_PATTERN,
-            "query-type": QUERY_TYPE_API_NAME_PATTERN,
-        }
+        # Get pattern name from settings mapping
+        pattern_name = settings.API_NAME_PATTERNS_BY_TYPE.get(resource_type, "API_NAME_ACTION_TYPE")
         
-        # Get the appropriate pattern or default to ACTION_TYPE_API_NAME_PATTERN
-        pattern = patterns.get(resource_type, ACTION_TYPE_API_NAME_PATTERN)
+        # Get compiled pattern from settings
+        pattern = settings.get_compiled_pattern(pattern_name)
+        if not pattern:
+            raise ValueError(f"No pattern found for {pattern_name}")
         
         # Validate the API name
         return validate_string(v, pattern, RESERVED_WORDS, "api_name")

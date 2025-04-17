@@ -89,16 +89,28 @@ class ConstrainedStr(str):
     """
     Base class for constrained string types with pattern and reserved word validation.
     
-    Attributes:
-        pattern (ClassVar[Pattern[str]]): Regex pattern for validation
-        reserved_words (ClassVar[Optional[Set[str]]]): Reserved words to forbid
+    Class Methods:
+        _get_pattern(): Get the compiled pattern from settings
+        _get_reserved_words(): Get reserved words minus allowed exceptions
     
     Raises:
         ValueError: If validation fails
         TypeError: If input is not a string
     """
-    pattern: ClassVar[Pattern[str]]
-    reserved_words: ClassVar[Optional[Set[str]]] = None
+    allowed_exceptions: ClassVar[Set[str]] = set()
+    
+    @classmethod
+    def _get_pattern(cls) -> Pattern[str]:
+        """Get the compiled pattern from settings."""
+        pattern = settings.get_compiled_pattern(cls.__name__.upper())
+        if not pattern:
+            raise ValueError(f"No pattern found for {cls.__name__}")
+        return pattern
+        
+    @classmethod
+    def _get_reserved_words(cls) -> Set[str]:
+        """Get reserved words minus allowed exceptions."""
+        return settings.RESERVED_WORDS - cls.allowed_exceptions
     
     @classmethod
     def __get_pydantic_core_schema__(cls: Type[T], source_type: Any, handler: Any) -> core_schema.CoreSchema:
@@ -123,9 +135,7 @@ class ServiceStr(ConstrainedStr):
         'users'
         >>> ServiceStr.validate("Users")  # Raises ValueError
     """
-    pattern: ClassVar[Pattern[str]] = SERVICE_PATTERN
-    # Allow the default service to be used even if it's reserved
-    reserved_words: ClassVar[Set[str]] = RESERVED_WORDS - {settings.DEFAULT_SERVICE}
+    allowed_exceptions = {settings.DEFAULT_SERVICE}
 
 class InstanceStr(ConstrainedStr):
     """
@@ -136,9 +146,7 @@ class InstanceStr(ConstrainedStr):
         'main'
         >>> InstanceStr.validate("Main")  # Raises ValueError
     """
-    pattern: ClassVar[Pattern[str]] = INSTANCE_PATTERN
-    # Allow the default instance to be used even if it's reserved
-    reserved_words: ClassVar[Set[str]] = RESERVED_WORDS - {settings.DEFAULT_INSTANCE}
+    allowed_exceptions = {settings.DEFAULT_INSTANCE}
 
 class TypeStr(ConstrainedStr):
     """
