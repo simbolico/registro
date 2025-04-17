@@ -138,13 +138,13 @@ class Resource(TimestampedModel, table=True):
         if "id" not in data or data["id"] is None:
             data["id"] = generate_ulid()
         
-        # Get the required components with fallbacks
+        # Get the required components with configured defaults
         service = data.get("service", settings.DEFAULT_SERVICE)
         instance = data.get("instance", settings.DEFAULT_INSTANCE)
         resource_type = data.get("resource_type", "resource")
         locator = data["id"]
         
-        # Generate the RID if not provided
+        # Generate the RID if not provided using configured prefix
         if "rid" not in data or data["rid"] is None:
             data["rid"] = f"{settings.RID_PREFIX}.{service}.{instance}.{resource_type}.{locator}"
             logger.debug(f"RID generated in __init__: {data['rid']}")
@@ -173,13 +173,13 @@ class Resource(TimestampedModel, table=True):
         if "id" not in values or values["id"] is None:
             values["id"] = generate_ulid()
         
-        # Get the required components with fallbacks
+        # Get the required components with configured defaults
         service = values.get("service", settings.DEFAULT_SERVICE)
         instance = values.get("instance", settings.DEFAULT_INSTANCE)
         resource_type = values.get("resource_type", "resource")
         locator = values["id"]
         
-        # Now generate the RID
+        # Generate the RID using configured prefix
         values["rid"] = f"{settings.RID_PREFIX}.{service}.{instance}.{resource_type}.{locator}"
         logger.debug(f"RID generated in validator: {values['rid']}")
         return values
@@ -216,7 +216,7 @@ class Resource(TimestampedModel, table=True):
         if len(rid_parts) != 5:
             raise ValueError(f"Invalid RID format: '{model.rid}' must have 5 components")
         
-        # Validate RID prefix
+        # Validate RID prefix against configured value
         if rid_parts[0] != settings.RID_PREFIX:
             raise ValueError(f"Invalid RID prefix: '{rid_parts[0]}' must be '{settings.RID_PREFIX}'")
         
