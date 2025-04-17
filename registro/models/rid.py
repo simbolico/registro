@@ -185,32 +185,79 @@ class TypeStr(ConstrainedStr):
         "property-type", "object-type"
     }
 
+import re
+
+def get_rid_pattern() -> Pattern[str]:
+    """
+    Generate a regex pattern for complete Resource Identifiers (RIDs).
+    
+    Uses the current RID_PREFIX and component patterns from settings to create 
+    a pattern that matches: <prefix>.<service>.<instance>.<type>.<locator>
+    
+    Returns:
+        Pattern[str]: Compiled regex pattern for RIDs
+        
+    Raises:
+        ValueError: If any required pattern string is missing in settings.
+    """
+    prefix = re.escape(settings.RID_PREFIX)
+    
+    # Fetch pattern strings - handle None cases
+    service_p = settings.get_pattern_string("SERVICE")
+    instance_p = settings.get_pattern_string("INSTANCE")
+    type_p = settings.get_pattern_string("TYPE")
+    locator_p = settings.get_pattern_string("LOCATOR")
+
+    if not all([service_p, instance_p, type_p, locator_p]):
+        missing = [name for name, p in [("SERVICE", service_p), ("INSTANCE", instance_p), ("TYPE", type_p), ("LOCATOR", locator_p)] if not p]
+        raise ValueError(f"Configuration error: Missing pattern strings in settings for: {', '.join(missing)}")
+        
+    # Remove anchors from component patterns before combining
+    service_p = service_p.strip('^$')
+    instance_p = instance_p.strip('^$')
+    type_p = type_p.strip('^$')
+    locator_p = locator_p.strip('^$')
+    
+    # Construct the full pattern string
+    full_pattern_str = rf"^{prefix}\.({service_p})\.({instance_p})\.({type_p})\.({locator_p})$"
+    
+    try:
+        return re.compile(full_pattern_str)
+    except re.error as e:
+        raise ValueError(f"Failed to compile dynamic RID pattern: {e}\nPattern: {full_pattern_str}")
+
 class LocatorStr(ConstrainedStr):
     """
     String type for the 'locator' component of a RID (ULID).
+    Uses pattern 'LOCATOR' from settings. Performs additional ULID validation.
 
     Example:
         >>> LocatorStr.validate("01GXHP6H7TW89BYT4S9C9JM7XX")  # Valid
         '01GXHP6H7TW89BYT4S9C9JM7XX'
         >>> LocatorStr.validate("invalid")  # Raises ValueError
     """
+    allowed_exceptions: ClassVar[Set[str]] = set()
+
     @classmethod
     def validate(cls: Type[LocatorStr], v: str, info: Any) -> str:
-        """Validate the input is a valid ULID string."""
-        if not isinstance(v, str):
-            raise TypeError(f"Expected string, got {type(v).__name__}")
-        
+        """Validate the input is a valid ULID string using dynamic pattern/reserved words first."""
+        # Step 1: Perform base validation directly using the utility function
         pattern = cls._get_pattern()
-        if not pattern.match(v):
-            raise ValueError(f"String '{v}' is not a valid ULID format")
-        
+        reserved = cls._get_reserved_words()
+        validated_str = validate_string(v, pattern, reserved, cls.__name__)
+
+        # Step 2: Perform additional ULID-specific validation
         try:
-            if len(v) != 26:
-                raise ValueError("ULID must be 26 characters")
+            # Use ulid library for robust check
+            ulid.parse(validated_str)
+        except ValueError as e:
+            raise ValueError(f"Invalid ULID '{validated_str}': {e}")
         except Exception as e:
-            raise ValueError(f"Invalid ULID: {e}")
-        
-        return v
+            # Fallback to length check if ulid parse fails
+            if len(validated_str) != 26:
+                raise ValueError(f"Invalid ULID '{validated_str}': Must be 26 characters. Parse error: {e}")
+
+        return validated_str
 
 class RID(str):
     """
