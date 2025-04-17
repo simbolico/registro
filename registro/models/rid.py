@@ -155,24 +155,35 @@ class ServiceStr(ConstrainedStr):
 class InstanceStr(ConstrainedStr):
     """
     String type for the 'instance' component of a RID.
+    Uses pattern 'INSTANCE' from settings. Allows settings.DEFAULT_INSTANCE
+    even if it's in the reserved words list.
 
     Example:
         >>> InstanceStr.validate("main")  # Valid
         'main'
         >>> InstanceStr.validate("Main")  # Raises ValueError
     """
-    allowed_exceptions = {settings.DEFAULT_INSTANCE}
+    @classmethod
+    def _get_reserved_words(cls) -> Set[str]:
+        """Get reserved words, allowing the configured DEFAULT_INSTANCE."""
+        base_reserved_words = settings.RESERVED_WORDS
+        return base_reserved_words - {settings.DEFAULT_INSTANCE}
 
 class TypeStr(ConstrainedStr):
     """
     String type for the 'type' component of a RID.
+    Uses pattern 'TYPE' from settings. Allows common type names
+    even if they are in the reserved words list.
 
     Example:
         >>> TypeStr.validate("user")  # Valid
         'user'
         >>> TypeStr.validate("User")  # Raises ValueError
     """
-    allowed_exceptions = {"resource", "object", "link", "action", "query"}
+    allowed_exceptions: ClassVar[Set[str]] = {
+        "resource", "object", "link", "action", "query",
+        "property-type", "object-type"
+    }
 
 class LocatorStr(ConstrainedStr):
     """
