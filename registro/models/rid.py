@@ -270,9 +270,26 @@ class RID(str):
     @classmethod
     def __get_pydantic_core_schema__(cls: Type[RID], source_type: Any, handler: Any) -> core_schema.CoreSchema:
         """Define Pydantic v2 validation schema."""
+        try:
+            prefix = re.escape(settings.RID_PREFIX)
+            service_p = settings.get_pattern_string("SERVICE").strip('^$')
+            instance_p = settings.get_pattern_string("INSTANCE").strip('^$')
+            type_p = settings.get_pattern_string("TYPE").strip('^$')
+            locator_p = settings.get_pattern_string("LOCATOR").strip('^$')
+            if not all([service_p, instance_p, type_p, locator_p]):
+                raise ValueError("Missing component patterns in settings")
+            rid_pattern_str = rf"^{prefix}\.({service_p})\.({instance_p})\.({type_p})\.({locator_p})$"
+        except (ValueError, AttributeError) as e:
+            logger.error(f"Schema generation error for RID: Could not get pattern strings from settings - {e}")
+            return core_schema.with_info_after_validator_function(
+                cls.validate,
+                core_schema.str_schema(),
+                serialization=core_schema.str_schema(),
+            )
+
         return core_schema.with_info_after_validator_function(
             cls.validate,
-            core_schema.str_schema(),
+            core_schema.str_schema(pattern=rid_pattern_str),
             serialization=core_schema.str_schema(),
         )
     
