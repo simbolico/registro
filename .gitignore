@@ -162,3 +162,5 @@ cython_debug/
 .db
 .log
 .png
+
+attached_assets/

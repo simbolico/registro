@@ -27,8 +27,7 @@ from pathlib import Path
 
 # Add the base workspace directory to the Python path
 current_dir = Path(__file__).parent
-parent_dir = current_dir.parent
-workspace_dir = parent_dir.parent
+workspace_dir = current_dir.parent
 sys.path.insert(0, str(workspace_dir))
 
 # Import SQLModel components

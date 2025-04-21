@@ -5,7 +5,7 @@ This module provides decorators that simplify the creation and configuration of
 Registro resources, reducing boilerplate code and making the API more user-friendly.
 """
 
-from typing import Optional, Any, Dict, Type
+from typing import Optional, Any, Dict
 from sqlmodel import Field
 from registro.core.resource_base import ResourceTypeBaseModel
 from registro.config import settings
@@ -56,8 +56,15 @@ def resource(
         if is_table:
             new_attrs["__tablename__"] = cls.__name__.lower()
 
+        # Ensure annotation for api_name so default value is recognized
+        anns = new_attrs.get("__annotations__", {}).copy()
+        anns["api_name"] = str
+        new_attrs["__annotations__"] = anns
+
+        # Set default api_name for decorated resource
+        new_attrs["api_name"] = Field(default=actual_resource_type)
+
         # 4) Dynamically create a new class that inherits from ResourceTypeBaseModel
-        #    (which already inherits from SQLModel).
         Derived = type(cls.__name__, (ResourceTypeBaseModel,), new_attrs)
 
         # 5) Set the _service and _instance so that _create_resource picks them up

@@ -44,6 +44,12 @@ RESERVED_WORDS: Set[str] = {
     "null", "true", "false", "none", "id",
 }
 
+# API name patterns compiled from settings
+OBJECT_TYPE_API_NAME_PATTERN = settings.get_compiled_pattern("API_NAME_OBJECT_TYPE")
+LINK_TYPE_API_NAME_PATTERN = settings.get_compiled_pattern("API_NAME_LINK_TYPE")
+ACTION_TYPE_API_NAME_PATTERN = settings.get_compiled_pattern("API_NAME_ACTION_TYPE")
+QUERY_TYPE_API_NAME_PATTERN = settings.get_compiled_pattern("API_NAME_QUERY_TYPE")
+
 def validate_string(
     value: str,
     pattern: Pattern[str],

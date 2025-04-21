@@ -45,8 +45,7 @@ from pathlib import Path
 
 # Add the base workspace directory to the Python path
 current_dir = Path(__file__).parent
-parent_dir = current_dir.parent
-workspace_dir = parent_dir.parent
+workspace_dir = current_dir.parent
 sys.path.insert(0, str(workspace_dir))
 
 from typing import ClassVar, Set, Optional, List
@@ -745,13 +744,6 @@ def demonstrate_enhanced_features():
 
 if __name__ == "__main__":
     print("\n=== Running Custom Resource Example ===\n")
-    
-    # Run existing examples
-    demonstrate_basic_inventory_items()
-    demonstrate_custom_resource_base()
-    demonstrate_inventory_relationships()
-    
-    # Run new enhanced features example
+    # Run enhanced features example only
     demonstrate_enhanced_features()
-
     print("\n=== Example Completed ===\n")

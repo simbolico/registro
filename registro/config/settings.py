@@ -1,4 +1,3 @@
-
 """
 Configuration settings for the Registro library.
 
@@ -10,7 +9,8 @@ import os
 import re
 import json
 from typing import Dict, Optional, Pattern, Set
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from zoneinfo import ZoneInfo
 
 class Settings(BaseModel):
     """
@@ -24,12 +24,13 @@ class Settings(BaseModel):
     RID_PREFIX: str = "ri"
     DEFAULT_SERVICE: str = "default"
     DEFAULT_INSTANCE: str = "prod"
+    TIMEZONE: ZoneInfo = Field(default_factory=lambda: ZoneInfo(os.getenv("REGISTRO_TIMEZONE", "UTC")))
     
     # Pattern strings with defaults
     _pattern_rid_prefix: str = r"^[a-z][a-z0-9-]{0,9}$"
     _pattern_service: str = r"^[a-z][a-z-]{0,49}$"
     _pattern_instance: str = r"^[a-z0-9][a-z0-9-]{0,49}$"
-    _pattern_type: str = r"^[a-z][a-z-]{1,49}$"
+    _pattern_type: str = r"^[a-z][a-z-]{0,49}$"
     _pattern_locator: str = r"^[0-9A-HJ-KM-NPQRSTVWXYZ]{26}$"
     _pattern_api_name_object_type: str = r"^(?=.{1,100}$)[A-Z][A-Za-z0-9]*$"
     _pattern_api_name_link_type: str = r"^(?=.{1,100}$)[a-z][A-Za-z0-9]*$"
@@ -41,7 +42,7 @@ class Settings(BaseModel):
         self._compiled_patterns_cache: Dict[str, Pattern[str]] = {}
         self._reserved_words: Set[str] = {
             "new", "edit", "delete", "list", "search", "create",
-            "update", "remove", "get", "set", "add", "clear"
+            "update", "remove", "get", "set", "add", "clear", "null"
         }
         self._api_name_patterns_by_type: Dict[str, str] = {
             "object-type": "API_NAME_OBJECT_TYPE",
@@ -78,7 +79,7 @@ class Settings(BaseModel):
                 self._api_name_patterns_by_type.update(json.loads(mapping))
             except Exception:
                 pass
-
+        
     def get_pattern_string(self, name: str) -> Optional[str]:
         """Get the pattern string for a given name."""
         attr_name = f"_pattern_{name.lower()}"

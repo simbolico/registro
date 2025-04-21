@@ -1,1 +1,0 @@
-import os, sys; from sqlmodel import Field, Session, SQLModel, create_engine, select; from registro import ResourceTypeBaseModel; class Book(ResourceTypeBaseModel, table=True): __resource_type__ = "book"; title: str = Field(); author: str = Field(); print("Successfully imported and created a Book class")

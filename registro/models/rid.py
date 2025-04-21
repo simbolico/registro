@@ -1,4 +1,3 @@
-
 """
 Resource Identifier (RID) module for the Registro library.
 
@@ -241,22 +240,10 @@ class LocatorStr(ConstrainedStr):
     @classmethod
     def validate(cls: Type[LocatorStr], v: str, info: Any) -> str:
         """Validate the input is a valid ULID string using dynamic pattern/reserved words first."""
-        # Step 1: Perform base validation directly using the utility function
+        # Base validation: ensure pattern match and reserved words
         pattern = cls._get_pattern()
         reserved = cls._get_reserved_words()
         validated_str = validate_string(v, pattern, reserved, cls.__name__)
-
-        # Step 2: Perform additional ULID-specific validation
-        try:
-            # Use ulid library for robust check
-            ulid.parse(validated_str)
-        except ValueError as e:
-            raise ValueError(f"Invalid ULID '{validated_str}': {e}")
-        except Exception as e:
-            # Fallback to length check if ulid parse fails
-            if len(validated_str) != 26:
-                raise ValueError(f"Invalid ULID '{validated_str}': Must be 26 characters. Parse error: {e}")
-
         return validated_str
 
 class RID(str):
@@ -311,25 +298,19 @@ class RID(str):
         """
         if not isinstance(v, str):
             raise TypeError(f"Expected string, got {type(v).__name__}")
-        
-        rid_pattern = settings.get_compiled_pattern("RID")
-        if not rid_pattern or not rid_pattern.match(v):
-            raise ValueError(f"Invalid RID format: '{v}'")
-        
+        # Split into components
         parts = v.split('.')
         if len(parts) != 5:
             raise ValueError(f"RID must have 5 parts, got {len(parts)}")
-        
         prefix, service, instance, type_, locator = parts
-        
+        # Validate prefix
         if prefix != settings.RID_PREFIX:
             raise ValueError(f"RID prefix '{prefix}' must be '{settings.RID_PREFIX}'")
-        
+        # Validate components
         ServiceStr.validate(service, info)
         InstanceStr.validate(instance, info)
         TypeStr.validate(type_, info)
         LocatorStr.validate(locator, info)
-        
         return v
     
     @classmethod

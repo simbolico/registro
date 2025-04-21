@@ -216,17 +216,17 @@ class ResourceBaseModel(TimestampedModel, table=False):
     @property
     def service(self) -> str:
         """Get the service component from the RID."""
-        return self.resource_data.get('service', '')
+        return self.resource_data.get('service') or self._service
     
     @property
     def instance(self) -> str:
         """Get the instance component from the RID."""
-        return self.resource_data.get('instance', '')
+        return self.resource_data.get('instance') or self._instance
     
     @property
     def resource_type(self) -> str:
         """Get the resource_type component from the RID."""
-        return self.resource_data.get('resource_type', '')
+        return self.resource_data.get('resource_type') or self.__resource_type__
     
     @property
     def resource_id(self) -> str:
@@ -380,9 +380,18 @@ class ResourceTypeBaseModel(ResourceBaseModel, ResourceRelationshipMixin, table=
         Args:
             **data: Resource data including optional service and instance
         """
-        # Extract service and instance with defaults from data
-        self._service = data.pop("service", None) or settings.DEFAULT_SERVICE
-        self._instance = data.pop("instance", None) or settings.DEFAULT_INSTANCE
+        # Determine service: explicit, class-level, or default
+        svc = data.pop("service", None)
+        if svc is not None:
+            self._service = svc
+        else:
+            self._service = getattr(self.__class__, "_service", settings.DEFAULT_SERVICE)
+        # Determine instance: explicit, class-level, or default
+        inst = data.pop("instance", None)
+        if inst is not None:
+            self._instance = inst
+        else:
+            self._instance = getattr(self.__class__, "_instance", settings.DEFAULT_INSTANCE)
         super().__init__(**data)
     
     def get_related_resource(self, 
