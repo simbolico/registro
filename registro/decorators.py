@@ -16,7 +16,7 @@ class ResourceTableBase(ResourceTypeBaseModel, table=False):
     """Base class for resources that should be database tables."""
     pass
 
-_SKIP_ATTRS = {"__dict__", "__weakref__", "__module__", "__doc__", "__annotations__"}
+_SKIP_ATTRS = {"__dict__", "__weakref__", "__module__", "__doc__", "__annotations__", "__qualname__"}
 
 def _build_sqlmodel_class(
     name: str,
