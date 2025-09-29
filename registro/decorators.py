@@ -5,10 +5,15 @@ This module provides decorators that simplify the creation and configuration of
 Registro resources, reducing boilerplate code and making the API more user-friendly.
 """
 
-from typing import Optional, Any, Dict
-from sqlmodel import Field
+from typing import Optional, Any, Dict, ClassVar
+from sqlmodel import Field, SQLModel
 from registro.core.resource_base import ResourceTypeBaseModel
 from registro.config import settings
+
+# Base class for table-based resources
+class ResourceTableBase(ResourceTypeBaseModel, table=False):
+    """Base class for resources that should be database tables."""
+    pass
 
 def resource(
     *,
@@ -56,16 +61,38 @@ def resource(
         if is_table:
             new_attrs["__tablename__"] = cls.__name__.lower()
 
-        # Ensure annotation for api_name so default value is recognized
-        anns = new_attrs.get("__annotations__", {}).copy()
-        anns["api_name"] = str
-        new_attrs["__annotations__"] = anns
-
-        # Set default api_name for decorated resource
-        new_attrs["api_name"] = Field(default=actual_resource_type)
-
-        # 4) Dynamically create a new class that inherits from ResourceTypeBaseModel
-        Derived = type(cls.__name__, (ResourceTypeBaseModel,), new_attrs)
+        # 4) Dynamically create a new class that inherits from the appropriate base
+        if is_table:
+            base_class = ResourceTableBase
+            # Use exec to create a proper class with table=True
+            class_name = cls.__name__
+            class_code = f"""
+class {class_name}(ResourceTableBase, table=True):
+    __resource_type__ = "{actual_resource_type}"
+    __tablename__ = "{cls.__name__.lower()}"
+"""
+            # Add fields (but skip complex Field objects for now)
+            for name, value in cls.__dict__.items():
+                if (not name.startswith('_') and 
+                    name not in ['__annotations__', '__module__', '__qualname__', '__doc__']):
+                    # Skip Field objects that have FieldInfo in their type
+                    if 'FieldInfo' in str(type(value)):
+                        continue
+                    try:
+                        class_code += f"    {name} = {repr(value)}\n"
+                    except:
+                        # Skip if repr fails
+                        pass
+            
+            # Execute
+            exec_globals = globals().copy()
+            exec_globals['ResourceTableBase'] = ResourceTableBase
+            local_vars = {}
+            exec(class_code, exec_globals, local_vars)
+            Derived = local_vars[class_name]
+        else:
+            base_class = ResourceTypeBaseModel
+            Derived = type(cls.__name__, (base_class,), new_attrs)
 
         # 5) Set the _service and _instance so that _create_resource picks them up
         Derived._service = service or settings.DEFAULT_SERVICE

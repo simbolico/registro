@@ -61,12 +61,12 @@ def generate_ulid() -> str:
         if last_ulid is not None:
             try:
                 # Try using ulid-py's monotonic feature if available
-                new_ulid = ulid.new().monotonic()
+                new_ulid = ulid.ULID().monotonic()
             except (AttributeError, TypeError):
                 # If not available, just generate a new one
-                new_ulid = ulid.new()
+                new_ulid = ulid.ULID()
         else:
-            new_ulid = ulid.new()
+            new_ulid = ulid.ULID()
             
     except (AttributeError, TypeError):
         # Fallback method if the library doesn't support the methods we tried

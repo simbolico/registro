@@ -64,7 +64,7 @@ class DatabaseModel(SQLModel, table=False):
     """
     
     id: str = Field(
-        default_factory=lambda: str(ulid.new()),
+        default_factory=lambda: str(ulid.ULID()),
         sa_column=mapped_column(String, primary_key=True, index=True, unique=True, nullable=False),
         description="Unique identifier (ULID)"
     )
