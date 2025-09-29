@@ -1,12 +1,13 @@
 """
 Decorators for Registro resources.
 
-This module provides decorators that simplify the creation and configuration of
-Registro resources, reducing boilerplate code and making the API more user-friendly.
+This version preserves annotations, Field(...) definitions, validators,
+methods, docstrings, and model_config while creating proper SQLModel table
+classes without using exec().
 """
 
-from typing import Optional, Any, Dict, ClassVar
-from sqlmodel import Field, SQLModel
+from typing import Optional, Any, Dict
+from types import new_class
 from registro.core.resource_base import ResourceTypeBaseModel
 from registro.config import settings
 
@@ -15,86 +16,72 @@ class ResourceTableBase(ResourceTypeBaseModel, table=False):
     """Base class for resources that should be database tables."""
     pass
 
+_SKIP_ATTRS = {"__dict__", "__weakref__", "__module__", "__doc__", "__annotations__"}
+
+def _build_sqlmodel_class(
+    name: str,
+    base: type,
+    *,
+    table: bool,
+    attrs: Dict[str, Any],
+) -> type:
+    """
+    Build a new SQLModel (or non-table) class with SQLModel's metaclass
+    using types.new_class so we can pass kwds={'table': True}.
+    """
+    def exec_body(ns):
+        # Maintain module & doc before validators are processed
+        ns["__module__"] = attrs.get("__module__", base.__module__)
+        if attrs.get("__doc__"):
+            ns["__doc__"] = attrs["__doc__"]
+
+        # Annotations must be present so Field(...) are correctly parsed
+        ns["__annotations__"] = dict(attrs.get("__annotations__", {}))
+
+        # Copy everything else (methods, validators, constants, model_config, etc.)
+        for k, v in attrs.items():
+            if k in _SKIP_ATTRS:
+                continue
+            ns[k] = v
+
+    # kwds propagates to SQLModel's metaclass (equivalent to class X(SQLModel, table=True))
+    return new_class(name, (base,), kwds={"table": table}, exec_body=exec_body)
+
 def resource(
     *,
     service: Optional[str] = None,
     instance: Optional[str] = None,
     resource_type: Optional[str] = None,
-    is_table: bool = True
+    is_table: bool = True,
+    tablename: Optional[str] = None,
 ):
     """
     Decorator to transform a user-defined class into a Registro resource.
 
     Args:
-        service: The service name for this resource. Defaults to settings.DEFAULT_SERVICE.
-        instance: The instance name for this resource. Defaults to settings.DEFAULT_INSTANCE.
-        resource_type: The resource type identifier. Defaults to the lowercase class name.
-        is_table: Whether this resource should be a database table. Defaults to True.
-
-    Returns:
-        A decorator function that transforms the class into a Registro resource.
-
-    Example:
-        ```python
-        from registro import resource
-        from sqlmodel import Field
-
-        @resource(resource_type="product")  # is_table=True by default
-        class Product:
-            name: str = Field(...)
-            price: float = Field(...)
-        ```
+        service: Overrides default service (settings.DEFAULT_SERVICE if omitted).
+        instance: Overrides default instance (settings.DEFAULT_INSTANCE if omitted).
+        resource_type: Explicit resource type (defaults to class name in lowercase).
+        is_table: Create a real table model (True) or a non-table model (False).
+        tablename: Optional explicit __tablename__ when is_table=True.
     """
     def decorator(cls):
-        # 1) Determine the final resource_type from argument or class name
         actual_resource_type = resource_type or cls.__name__.lower()
+        # Start with the original attributes so validators/methods are preserved
+        attrs = dict(cls.__dict__)
 
-        # 2) Copy over user-defined attributes (fields, methods, etc.)
-        new_attrs = dict(cls.__dict__)
-        for unwanted in ("__dict__", "__weakref__"):
-            new_attrs.pop(unwanted, None)
+        # Force the resource type (needed by ResourceBaseModel.__init_subclass__)
+        attrs["__resource_type__"] = actual_resource_type
 
-        # 3) Force the resource_type at the class level
-        new_attrs["__resource_type__"] = actual_resource_type
-
-        # If the user wants to create an actual database table
+        # If table, ensure a tablename is present
         if is_table:
-            new_attrs["__tablename__"] = cls.__name__.lower()
+            attrs.setdefault("__tablename__", (tablename or cls.__name__.lower()))
 
-        # 4) Dynamically create a new class that inherits from the appropriate base
-        if is_table:
-            base_class = ResourceTableBase
-            # Use exec to create a proper class with table=True
-            class_name = cls.__name__
-            class_code = f"""
-class {class_name}(ResourceTableBase, table=True):
-    __resource_type__ = "{actual_resource_type}"
-    __tablename__ = "{cls.__name__.lower()}"
-"""
-            # Add fields (but skip complex Field objects for now)
-            for name, value in cls.__dict__.items():
-                if (not name.startswith('_') and 
-                    name not in ['__annotations__', '__module__', '__qualname__', '__doc__']):
-                    # Skip Field objects that have FieldInfo in their type
-                    if 'FieldInfo' in str(type(value)):
-                        continue
-                    try:
-                        class_code += f"    {name} = {repr(value)}\n"
-                    except:
-                        # Skip if repr fails
-                        pass
-            
-            # Execute
-            exec_globals = globals().copy()
-            exec_globals['ResourceTableBase'] = ResourceTableBase
-            local_vars = {}
-            exec(class_code, exec_globals, local_vars)
-            Derived = local_vars[class_name]
-        else:
-            base_class = ResourceTypeBaseModel
-            Derived = type(cls.__name__, (base_class,), new_attrs)
+        # Choose base and create the derived class through SQLModel's metaclass
+        base = ResourceTableBase if is_table else ResourceTypeBaseModel
+        Derived = _build_sqlmodel_class(cls.__name__, base, table=is_table, attrs=attrs)
 
-        # 5) Set the _service and _instance so that _create_resource picks them up
+        # Stash defaults for the auto-create-resource hook
         Derived._service = service or settings.DEFAULT_SERVICE
         Derived._instance = instance or settings.DEFAULT_INSTANCE
 
