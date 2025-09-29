@@ -159,8 +159,20 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-.db
-.log
-.png
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
+# Log files
+*.log
+
+# Image files (screenshots, etc.)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+
+# Temporary files and assets
 attached_assets/
