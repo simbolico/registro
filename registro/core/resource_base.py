@@ -128,8 +128,9 @@ class ResourceBaseModel(TimestampedModel, table=False):
         if cls.__tablename__ is not None and cls.__resource_type__ == "":
             raise ValueError(f"__resource_type__ must be set on {cls.__name__}")
         
-        # Register event listeners for database operations
-        event.listen(cls, 'before_insert', cls._create_resource)
+        # Register event listeners only for mapped (table) classes
+        if getattr(cls, "__tablename__", None) is not None:
+            event.listen(cls, 'before_insert', cls._create_resource)
     
     @staticmethod
     def _create_resource(mapper, connection, instance):

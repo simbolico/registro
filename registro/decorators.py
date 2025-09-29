@@ -64,8 +64,20 @@ def resource(
         resource_type: Explicit resource type (defaults to class name in lowercase).
         is_table: Create a real table model (True) or a non-table model (False).
         tablename: Optional explicit __tablename__ when is_table=True.
+
+    Raises:
+        ValueError: If tablename is provided but is_table=False.
+
+    Returns:
+        Decorated class with resource functionality.
     """
     def decorator(cls):
+        if tablename is not None and not is_table:
+            raise ValueError(
+                f"tablename='{tablename}' provided but is_table=False. "
+                "tablename only applies to table models."
+            )
+        
         actual_resource_type = resource_type or cls.__name__.lower()
         # Start with the original attributes so validators/methods are preserved
         attrs = dict(cls.__dict__)

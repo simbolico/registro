@@ -8,9 +8,11 @@ class Book(ResourceTypeBaseModel, table=True):
     api_name: str = Field(index=True)
     title: str = Field(index=True)
 
-def test_inserting_book_creates_resource(tmp_path):
-    settings.DEFAULT_SERVICE = "testsvc"
-    settings.DEFAULT_INSTANCE = "demo"
+def test_inserting_book_creates_resource(tmp_path, monkeypatch):
+    # Use monkeypatch to avoid leaking global state changes between tests
+    monkeypatch.setattr(settings, "DEFAULT_SERVICE", "testsvc")
+    monkeypatch.setattr(settings, "DEFAULT_INSTANCE", "demo")
+    
     db = tmp_path / "t.db"
     eng = create_engine(f"sqlite:///{db}")
     SQLModel.metadata.create_all(eng)
