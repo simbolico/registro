@@ -19,6 +19,7 @@ Example: ri.users.main.user.01GXHP6H7TW89BYT4S9C9JM7XX
 
 from __future__ import annotations
 
+import os
 import threading
 import ulid
 import logging
@@ -52,34 +53,21 @@ def generate_ulid() -> str:
     Thread Safety:
         Uses thread-local storage to maintain monotonicity per thread
     """
-    # Get the most recent ULID from thread-local storage (or None if first call)
-    last_ulid: Optional[ulid.ULID] = getattr(_thread_local, 'last_ulid', None)
-    
-    # Generate a new ULID
-    try:
-        # Try to generate a monotonic ULID if we have a previous one
-        if last_ulid is not None:
-            try:
-                # Try using ulid-py's monotonic feature if available
-                new_ulid = ulid.ULID().monotonic()
-            except (AttributeError, TypeError):
-                # If not available, just generate a new one
-                new_ulid = ulid.ULID()
+    monotonic_api = getattr(ulid, "monotonic", None)
+    if monotonic_api and hasattr(monotonic_api, "new"):
+        new_ulid = monotonic_api.new()
+    else:
+        creator = getattr(ulid, "new", None)
+        if callable(creator):
+            new_ulid = creator()
         else:
-            new_ulid = ulid.ULID()
-            
-    except (AttributeError, TypeError):
-        # Fallback method if the library doesn't support the methods we tried
-        import time
-        import random
-        # Basic ULID generation without the library's specialized features
-        timestamp = int(time.time() * 1000)
-        randomness = random.getrandbits(80).to_bytes(10, byteorder='big')
-        new_ulid = ulid.from_timestamp(timestamp, randomness)
-    
-    # Store the new ULID for future reference
+            try:
+                new_ulid = ulid.ULID()
+            except TypeError:
+                new_ulid = ulid.ULID.from_bytes(os.urandom(16))
+
     _thread_local.last_ulid = new_ulid
-    
+
     return str(new_ulid)
 
 class ConstrainedStr(str):

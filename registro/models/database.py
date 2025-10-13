@@ -50,6 +50,16 @@ def datetime_with_timezone(tz: Optional[ZoneInfo] = None) -> datetime:
     
     return datetime.now(tz)
 
+
+def generate_ulid() -> str:
+    creator = getattr(ulid, "new", None)
+    if callable(creator):
+        return str(creator())
+    try:
+        return str(ulid.ULID())
+    except TypeError:
+        return str(ulid.ULID.from_bytes(os.urandom(16)))
+
 class DatabaseModel(SQLModel, table=False):
     """
     Base model for database entities with a ULID identifier and timestamps.
@@ -64,7 +74,7 @@ class DatabaseModel(SQLModel, table=False):
     """
     
     id: str = Field(
-        default_factory=lambda: str(ulid.ULID()),
+        default_factory=generate_ulid,
         sa_column=mapped_column(String, primary_key=True, index=True, unique=True, nullable=False),
         description="Unique identifier (ULID)"
     )
