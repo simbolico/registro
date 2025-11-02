@@ -30,7 +30,13 @@ Registro is a resource management framework for Python applications that provide
 pip install registro
 ```
 
-### With Rye (Recommended)
+### With UV (Recommended)
+
+```bash
+uv add registro
+```
+
+### With Rye
 
 ```bash
 rye add registro
