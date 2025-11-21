@@ -84,6 +84,20 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 python_classes = "Test*"
+addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["registro"]
+omit = [
+    "*/__init__.py",
+    "tests/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 100
 
 [tool.mypy]
 python_version = "3.8"
