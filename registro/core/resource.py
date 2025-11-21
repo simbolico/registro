@@ -13,7 +13,7 @@ Resources are immutable after creation, with critical fields protected from modi
 """
 
 from typing import Optional, List, Any, ForwardRef, ClassVar, Dict, Set
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, JSON, Column
 from pydantic import field_validator, model_validator, ValidationInfo, ConfigDict
 from sqlalchemy import String, event, insert
 from sqlalchemy.orm import mapped_column, object_session
@@ -100,6 +100,9 @@ class Resource(TimestampedModel, table=True):
         index=True,
         description="Type of resource (e.g., 'user'), immutable once set"
     )
+
+    # Arbitrary tags/metadata for governance and indexing
+    meta_tags: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     
     # Field-level immutability
     _immutable_fields: ClassVar[Set[str]] = {

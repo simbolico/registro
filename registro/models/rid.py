@@ -236,15 +236,16 @@ class LocatorStr(ConstrainedStr):
 
 class RID(str):
     """
-    Resource Identifier (RID) class for unique resource identification.
+    Identificador de Recurso Inteligente (RID).
+    Comporta-se como str no banco, mas como objeto no código.
     
     An RID has the format: <prefix>.<service>.<instance>.<type>.<locator>
     Example: ri.users.main.user.01GXHP6H7TW89BYT4S9C9JM7XX
     """
-    
+
     @classmethod
-    def __get_pydantic_core_schema__(cls: Type[RID], source_type: Any, handler: Any) -> core_schema.CoreSchema:
-        """Define Pydantic v2 validation schema."""
+    def __get_pydantic_core_schema__(cls: Type["RID"], source_type: Any, handler: Any) -> core_schema.CoreSchema:
+        """Define Pydantic v2 schema returning RID instances."""
         try:
             prefix = re.escape(settings.RID_PREFIX)
             service_p = settings.get_pattern_string("SERVICE").strip('^$')
@@ -254,22 +255,17 @@ class RID(str):
             if not all([service_p, instance_p, type_p, locator_p]):
                 raise ValueError("Missing component patterns in settings")
             rid_pattern_str = rf"^{prefix}\.({service_p})\.({instance_p})\.({type_p})\.({locator_p})$"
+            base = core_schema.str_schema(pattern=rid_pattern_str)
         except (ValueError, AttributeError) as e:
-            logger.error(f"Schema generation error for RID: Could not get pattern strings from settings - {e}")
-            return core_schema.with_info_after_validator_function(
-                cls.validate,
-                core_schema.str_schema(),
-                serialization=core_schema.str_schema(),
+            logger.error(
+                f"Schema generation error for RID: Could not get pattern strings from settings - {e}"
             )
+            base = core_schema.str_schema()
 
-        return core_schema.with_info_after_validator_function(
-            cls.validate,
-            core_schema.str_schema(pattern=rid_pattern_str),
-            serialization=core_schema.str_schema(),
-        )
+        return core_schema.no_info_after_validator_function(cls.validate, base)
     
     @classmethod
-    def validate(cls: Type[RID], v: Any, info: Any) -> str:
+    def validate(cls: Type["RID"], v: Any) -> "RID":
         """
         Validate an RID string.
         
@@ -295,11 +291,11 @@ class RID(str):
         if prefix != settings.RID_PREFIX:
             raise ValueError(f"RID prefix '{prefix}' must be '{settings.RID_PREFIX}'")
         # Validate components
-        ServiceStr.validate(service, info)
-        InstanceStr.validate(instance, info)
-        TypeStr.validate(type_, info)
-        LocatorStr.validate(locator, info)
-        return v
+        ServiceStr.validate(service, None)
+        InstanceStr.validate(instance, None)
+        TypeStr.validate(type_, None)
+        LocatorStr.validate(locator, None)
+        return cls(v)
     
     @classmethod
     def generate(
@@ -368,3 +364,20 @@ class RID(str):
             'type': parts[3],
             'locator': parts[4]
         }
+
+    # Quick-access properties for RID components
+    @property
+    def service(self) -> str:
+        return self.split('.')[1]
+
+    @property
+    def instance(self) -> str:
+        return self.split('.')[2]
+
+    @property
+    def type(self) -> str:
+        return self.split('.')[3]
+
+    @property
+    def locator(self) -> str:
+        return self.split('.')[4]

@@ -25,6 +25,7 @@ from sqlalchemy.orm import declared_attr
 from pydantic import field_validator, ValidationInfo
 
 from registro.models.database import TimestampedModel, datetime_with_timezone
+from registro.core.mixins import ResourceSQLMixin
 from registro.models.rid import generate_ulid
 from registro.models.patterns import (
     OBJECT_TYPE_API_NAME_PATTERN,
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar('T', bound='ResourceBaseModel')
 
-class ResourceBaseModel(TimestampedModel, table=False):
+class ResourceBaseModel(ResourceSQLMixin, TimestampedModel, table=False):
     """
     Abstract base model for additional resource attributes linked to Resource via rid.
     
@@ -88,11 +89,7 @@ class ResourceBaseModel(TimestampedModel, table=False):
             ),
         )
     
-    rid: str = Field(
-        primary_key=True,
-        foreign_key="resource.rid",
-        default=None
-    )
+    # `rid` is provided by ResourceSQLMixin; FK is enforced via __table_args__
     
     status: str = Field(
         default="DRAFT",
@@ -173,7 +170,9 @@ class ResourceBaseModel(TimestampedModel, table=False):
                 service=service,
                 instance=instance_name,
                 resource_type=resource_type,
-                created_at=datetime_with_timezone()
+                created_at=datetime_with_timezone(),
+                # Populate governance metadata if the model exposes it
+                meta_tags=getattr(instance, "meta_tags", {})
             )
         )
         

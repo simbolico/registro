@@ -12,7 +12,7 @@ Core Components:
 """
 
 # Version
-__version__ = "0.2.4"
+__version__ = "0.3.0"
 
 # Core exports
 from registro.core.resource_base import ResourceTypeBaseModel
