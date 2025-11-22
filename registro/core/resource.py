@@ -188,8 +188,7 @@ class Resource(TimestampedModel, table=True):
         return values
     
     @model_validator(mode="after")
-    @classmethod
-    def check_rid_consistency(cls, model):
+    def check_rid_consistency(self):
         """
         Ensure rid matches the format based on service, instance, resource_type, and id.
         
@@ -198,9 +197,6 @@ class Resource(TimestampedModel, table=True):
         2. The components in the RID match the actual field values
         3. The RID is properly constructed with all required components
         
-        Args:
-            model: The Resource model instance being validated
-        
         Returns:
             The validated model instance
         
@@ -208,29 +204,29 @@ class Resource(TimestampedModel, table=True):
             ValueError: If the RID is invalid or inconsistent with other fields
         """
         # If rid is still not set (shouldn't happen, but just in case)
-        if not model.rid:
-            model.rid = f"{settings.RID_PREFIX}.{model.service}.{model.instance}.{model.resource_type}.{model.id}"
-            logger.debug(f"RID generated in consistency check: {model.rid}")
+        if not self.rid:
+            self.rid = f"{settings.RID_PREFIX}.{self.service}.{self.instance}.{self.resource_type}.{self.id}"
+            logger.debug(f"RID generated in consistency check: {self.rid}")
         
         # Split RID into components
-        rid_parts = model.rid.split('.')
+        rid_parts = self.rid.split('.')
         
         # Validate RID format
         if len(rid_parts) != 5:
-            raise ValueError(f"Invalid RID format: '{model.rid}' must have 5 components")
+            raise ValueError(f"Invalid RID format: '{self.rid}' must have 5 components")
         
         # Validate RID prefix against configured value
         if rid_parts[0] != settings.RID_PREFIX:
             raise ValueError(f"Invalid RID prefix: '{rid_parts[0]}' must be '{settings.RID_PREFIX}'")
         
         # Validate components match field values
-        if rid_parts[1] != model.service:
-            raise ValueError(f"RID service '{rid_parts[1]}' does not match field value '{model.service}'")
-        if rid_parts[2] != model.instance:
-            raise ValueError(f"RID instance '{rid_parts[2]}' does not match field value '{model.instance}'")
-        if rid_parts[3] != model.resource_type:
-            raise ValueError(f"RID resource_type '{rid_parts[3]}' does not match field value '{model.resource_type}'")
-        if rid_parts[4] != model.id:
-            raise ValueError(f"RID id '{rid_parts[4]}' does not match field value '{model.id}'")
+        if rid_parts[1] != self.service:
+            raise ValueError(f"RID service '{rid_parts[1]}' does not match field value '{self.service}'")
+        if rid_parts[2] != self.instance:
+            raise ValueError(f"RID instance '{rid_parts[2]}' does not match field value '{self.instance}'")
+        if rid_parts[3] != self.resource_type:
+            raise ValueError(f"RID resource_type '{rid_parts[3]}' does not match field value '{self.resource_type}'")
+        if rid_parts[4] != self.id:
+            raise ValueError(f"RID id '{rid_parts[4]}' does not match field value '{self.id}'")
         
-        return model 
+        return self 
