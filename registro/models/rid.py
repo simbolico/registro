@@ -265,13 +265,13 @@ class RID(str):
         return core_schema.no_info_after_validator_function(cls.validate, base)
     
     @classmethod
-    def validate(cls: Type["RID"], v: Any) -> "RID":
+    def validate(cls: Type["RID"], v: Any, info: Any = None) -> "RID":
         """
         Validate an RID string.
         
         Args:
             v: Value to validate
-            info: Validation context
+            info: Validation context (optional)
         
         Returns:
             str: Validated RID string

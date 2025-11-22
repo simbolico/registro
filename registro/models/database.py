@@ -17,8 +17,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional, Any, TypeVar, ClassVar, Type, cast
 from zoneinfo import ZoneInfo
-import os
-import ulid
 
 from pydantic import field_validator, ValidationInfo, ConfigDict
 from sqlmodel import SQLModel, Field
@@ -26,6 +24,7 @@ from sqlalchemy import String
 from sqlalchemy.orm import mapped_column
 
 from registro.config import settings
+from registro.models.rid import generate_ulid
 
 # Type variables for generic type hints
 T = TypeVar('T', bound='DatabaseModel')
@@ -51,14 +50,7 @@ def datetime_with_timezone(tz: Optional[ZoneInfo] = None) -> datetime:
     return datetime.now(tz)
 
 
-def generate_ulid() -> str:
-    creator = getattr(ulid, "new", None)
-    if callable(creator):
-        return str(creator())
-    try:
-        return str(ulid.ULID())
-    except TypeError:
-        return str(ulid.ULID.from_bytes(os.urandom(16)))
+
 
 class DatabaseModel(SQLModel, table=False):
     """
