@@ -26,6 +26,16 @@ class Settings(BaseModel):
     DEFAULT_INSTANCE: str = "prod"
     TIMEZONE: ZoneInfo = Field(default_factory=lambda: ZoneInfo(os.getenv("REGISTRO_TIMEZONE", "UTC")))
     
+    # Environment validation
+    ENVIRONMENT: Optional[str] = Field(
+        default_factory=lambda: os.getenv("REGISTRO_ENVIRONMENT"),
+        description="Application environment (dev, staging, prod)"
+    )
+    DEBUG: bool = Field(
+        default_factory=lambda: os.getenv("REGISTRO_DEBUG", "false").lower() == "true",
+        description="Enable debug mode for additional logging"
+    )
+    
     # Pattern strings with defaults
     _pattern_rid_prefix: str = r"^[a-z][a-z0-9-]{0,9}$"
     _pattern_service: str = r"^[a-z][a-z-]{0,49}$"
@@ -132,6 +142,51 @@ class Settings(BaseModel):
     def API_NAME_PATTERNS_BY_TYPE(self, mapping: Dict[str, str]) -> None:
         """Set the API name pattern mapping."""
         self._api_name_patterns_by_type = dict(mapping)
+    
+    def validate_environment(self, allowed_environments: Set[str] = None) -> bool:
+        """
+        Validate that the current environment is allowed.
+        
+        Args:
+            allowed_environments: Set of allowed environment names.
+                                If None, allows: dev, staging, prod
+        
+        Returns:
+            bool: True if environment is valid, False otherwise
+        """
+        if allowed_environments is None:
+            allowed_environments = {"dev", "staging", "prod", "development", "production"}
+        
+        if self.ENVIRONMENT and self.ENVIRONMENT not in allowed_environments:
+            if self.DEBUG:
+                import warnings
+                warnings.warn(
+                    f"Environment '{self.ENVIRONMENT}' is not in allowed set: {allowed_environments}",
+                    UserWarning
+                )
+            return False
+        
+        return True
+    
+    def get_effective_instance(self) -> str:
+        """
+        Get the effective instance name based on environment.
+        
+        Returns:
+            str: Effective instance name
+        """
+        if self.ENVIRONMENT:
+            env_map = {
+                "development": "dev",
+                "dev": "dev",
+                "staging": "staging",
+                "stage": "staging",
+                "production": "prod",
+                "prod": "prod",
+            }
+            return env_map.get(self.ENVIRONMENT.lower(), self.DEFAULT_INSTANCE)
+        
+        return self.DEFAULT_INSTANCE
 
 # Create global settings instance
 settings = Settings()
