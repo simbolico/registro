@@ -19,15 +19,15 @@ Example: ri.users.main.user.01GXHP6H7TW89BYT4S9C9JM7XX
 
 from __future__ import annotations
 
-import os
-import threading
-import ulid
 import logging
+import os
 import re
-from typing import (
-    Optional, Dict, ClassVar, Set, Pattern, Final, Type, Any, Union, TypeVar
-)
+import threading
+from typing import Any, ClassVar, Dict, Optional, Pattern, Set, Type, TypeVar
+
+import ulid
 from pydantic_core import core_schema
+
 from registro.config import settings
 from registro.models.patterns import validate_string
 
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 # Thread-local storage for last ULID to enable monotonic generation
 _thread_local: threading.local = threading.local()
 
-T = TypeVar('T', bound='ConstrainedStr')
+T = TypeVar("T", bound="ConstrainedStr")
 
 def generate_ulid() -> str:
     """
@@ -172,7 +172,6 @@ class TypeStr(ConstrainedStr):
         "property-type", "object-type"
     }
 
-import re
 
 def get_rid_pattern() -> Pattern[str]:
     """
@@ -200,10 +199,10 @@ def get_rid_pattern() -> Pattern[str]:
         raise ValueError(f"Configuration error: Missing pattern strings in settings for: {', '.join(missing)}")
         
     # Remove anchors from component patterns before combining
-    service_p = service_p.strip('^$')
-    instance_p = instance_p.strip('^$')
-    type_p = type_p.strip('^$')
-    locator_p = locator_p.strip('^$')
+    service_p = service_p.strip("^$")
+    instance_p = instance_p.strip("^$")
+    type_p = type_p.strip("^$")
+    locator_p = locator_p.strip("^$")
     
     # Construct the full pattern string
     full_pattern_str = rf"^{prefix}\.({service_p})\.({instance_p})\.({type_p})\.({locator_p})$"
@@ -244,14 +243,14 @@ class RID(str):
     """
 
     @classmethod
-    def __get_pydantic_core_schema__(cls: Type["RID"], source_type: Any, handler: Any) -> core_schema.CoreSchema:
+    def __get_pydantic_core_schema__(cls: Type[RID], source_type: Any, handler: Any) -> core_schema.CoreSchema:
         """Define Pydantic v2 schema returning RID instances."""
         try:
             prefix = re.escape(settings.RID_PREFIX)
-            service_p = settings.get_pattern_string("SERVICE").strip('^$')
-            instance_p = settings.get_pattern_string("INSTANCE").strip('^$')
-            type_p = settings.get_pattern_string("TYPE").strip('^$')
-            locator_p = settings.get_pattern_string("LOCATOR").strip('^$')
+            service_p = settings.get_pattern_string("SERVICE").strip("^$")
+            instance_p = settings.get_pattern_string("INSTANCE").strip("^$")
+            type_p = settings.get_pattern_string("TYPE").strip("^$")
+            locator_p = settings.get_pattern_string("LOCATOR").strip("^$")
             if not all([service_p, instance_p, type_p, locator_p]):
                 raise ValueError("Missing component patterns in settings")
             rid_pattern_str = rf"^{prefix}\.({service_p})\.({instance_p})\.({type_p})\.({locator_p})$"
@@ -265,7 +264,7 @@ class RID(str):
         return core_schema.no_info_after_validator_function(cls.validate, base)
     
     @classmethod
-    def validate(cls: Type["RID"], v: Any, info: Any = None) -> "RID":
+    def validate(cls: Type[RID], v: Any, info: Any = None) -> RID:
         """
         Validate an RID string.
         
@@ -283,7 +282,7 @@ class RID(str):
         if not isinstance(v, str):
             raise TypeError(f"Expected string, got {type(v).__name__}")
         # Split into components
-        parts = v.split('.')
+        parts = v.split(".")
         if len(parts) != 5:
             raise ValueError(f"RID must have 5 parts, got {len(parts)}")
         prefix, service, instance, type_, locator = parts
@@ -353,31 +352,69 @@ class RID(str):
         Raises:
             ValueError: If the RID format is invalid
         """
-        parts = self.split('.')
+        parts = self.split(".")
         if len(parts) != 5:
             raise ValueError(f"Invalid RID format: '{self}' must have 5 parts")
         
         return {
-            'prefix': parts[0],
-            'service': parts[1],
-            'instance': parts[2],
-            'type': parts[3],
-            'locator': parts[4]
+            "prefix": parts[0],
+            "service": parts[1],
+            "instance": parts[2],
+            "type": parts[3],
+            "locator": parts[4]
         }
 
     # Quick-access properties for RID components
     @property
     def service(self) -> str:
-        return self.split('.')[1]
+        return self.split(".")[1]
 
     @property
     def instance(self) -> str:
-        return self.split('.')[2]
+        return self.split(".")[2]
 
     @property
     def type(self) -> str:
-        return self.split('.')[3]
+        return self.split(".")[3]
 
     @property
     def locator(self) -> str:
-        return self.split('.')[4]
+        return self.split(".")[4]
+    
+    def is_valid_type(self, expected_type: str) -> bool:
+        """
+        Check if the RID is of a specific type.
+        
+        Args:
+            expected_type: The expected resource type to check against
+        
+        Returns:
+            bool: True if the RID matches the expected type, False otherwise
+        
+        Example:
+            >>> rid = RID("ri.users.main.user.01GXHP6H7TW89BYT4S9C9JM7XX")
+            >>> rid.is_valid_type("user")
+            True
+            >>> rid.is_valid_type("product")
+            False
+        """
+        return self.type == expected_type
+    
+    def is_from_service(self, expected_service: str) -> bool:
+        """
+        Check if the RID is from a specific service.
+        
+        Args:
+            expected_service: The expected service to check against
+        
+        Returns:
+            bool: True if the RID matches the expected service, False otherwise
+        
+        Example:
+            >>> rid = RID("ri.users.main.user.01GXHP6H7TW89BYT4S9C9JM7XX")
+            >>> rid.is_from_service("users")
+            True
+            >>> rid.is_from_service("products")
+            False
+        """
+        return self.service == expected_service
