@@ -105,4 +105,21 @@ disallow_incomplete_defs = true
 check_untyped_defs = true
 disallow_untyped_decorators = true
 no_implicit_optional = true
-strict_optional = true 
+strict_optional = true
+
+[tool.semantic_release]
+version_variable = "registro/__init__.py:__version__"
+version_toml = "pyproject.toml:project.version"
+version_pattern = "CHANGELOG.md:## \\[{version}\\]"
+build_command = "python -m pip install -U pip && python -m pip install -e .[dev]"
+upload_to_pypi = true
+upload_to_repository = true
+upload_to_release = true
+remove_dist = false
+patch_without_tag = true
+tag_annotated = true
+changelog_file = "CHANGELOG.md"
+branch = "main"
+major_on_zero = true
+commit_subject = "[skip ci] chore: bump version to {version}"
+commit_message = "[skip ci] chore: bump version to {version}" 

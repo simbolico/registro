@@ -1,0 +1,35 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+categories:
+  - title: 'Features'
+    labels:
+      - 'feat'
+  - title: 'Bug Fixes'
+    labels:
+      - 'fix'
+  - title: 'Maintenance'
+    labels:
+      - 'chore'
+      - 'refactor'
+      - 'style'
+  - title: 'Documentation'
+    labels:
+      - 'docs'
+  - title: 'Testing'
+    labels:
+      - 'test'
+  - title: 'Breaking Changes'
+    labels:
+      - 'breaking-change'
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+template: |
+  ## Changes
+  $CHANGES
+  ## Installation
+  ```bash
+  pip install registro==$RESOLVED_VERSION
+  ```
+  ## Verification
+  - [ ] All tests pass
+  - [ ] Code coverage maintained at 100%
+  - [ ] Documentation updated if necessary
