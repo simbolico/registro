@@ -1,3 +1,28 @@
+## [0.4.0] - 2025-11-23
+### Added
+- Centralized identity management with RID type and new_rid() function
+- Simplified ResourceTypeBaseModel for easier resource creation
+- Global registry system for dynamic resource type management
+- Domains package with example User model
+- Automatic ULID-based resource identifier generation
+- Built-in timestamp management with touch() method
+
+### Features
+- `registro/core/identity.py` - Centralized RID generation using ULID
+- `registro/core/simple_resource_base.py` - Unified base model for resource types
+- `registro/core/registry.py` - Global registry for resource type management
+- `registro/domains/` - Package for domain-specific models
+- Example usage in `examples/identity_registry_example.py`
+
+### Breaking Changes
+- New module exports added to core package
+
+## [0.3.1] - 2025-11-22
+### Fixed
+- Fixed Resource.__setattr__ to properly handle initialization state
+- Fixed RID generation logic with proper custom RID handling
+- Fixed pattern name mapping in settings.py for schema generation
+
 ## [0.3.0] - 2025-11-20
 ### Added
 - Smart RID with Pydantic v2 validation and component properties.
