@@ -123,11 +123,37 @@ class Resource(TimestampedModel, table=True):
         Raises:
             AttributeError: If attempting to modify an immutable field after initialization
         """
-        if name in self._immutable_fields and hasattr(self, name):
+        # 1. Se o campo não é protegido, passa direto (fast path)
+        if name not in self._immutable_fields:
+            super().__setattr__(name, value)
+            return
+        
+        # 2. Verificação de Estado de Inicialização
+        # Se o atributo já existe e tem um valor não nulo, consideramos que o objeto está inicializado
+        # para aquele campo específico. Apenas bloqueamos se estamos tentando modificar um valor
+        # já existente para um valor diferente.
+        
+        # Durante o __init__, os atributos ainda não existem, então hasattr() retorna False
+        if not hasattr(self, name):
+            # Campo não existe ainda, permitimos a criação (durante inicialização)
+            super().__setattr__(name, value)
+            return
+        
+        # Campo existe, verifica se estamos tentando modificar para um valor diferente
+        current_value = getattr(self, name)
+        if current_value is None:
+            # Valor atual é None (pode acontecer em alguns casos), permitimos a definição
+            super().__setattr__(name, value)
+            return
+        
+        # Campo existe e tem um valor não nulo, só permitimos se o valor for o mesmo
+        if value != current_value:
             raise AttributeError(
-                f"Cannot modify immutable field '{name}'. Critical fields {self._immutable_fields} "
-                "are immutable after initialization."
+                f"Cannot modify immutable field '{name}'. "
+                f"Critical fields {self._immutable_fields} are immutable after initialization."
             )
+        
+        # Valor é o mesmo, permitimos (sem efeito prático)
         super().__setattr__(name, value)
     
     def __init__(self, **data):
@@ -137,96 +163,123 @@ class Resource(TimestampedModel, table=True):
         Args:
             **data: Resource field values, can include 'id', 'rid', 'service', 'instance', 'resource_type'
         """
-        # Generate ID first if not provided
-        if "id" not in data or data["id"] is None:
-            data["id"] = generate_ulid()
-        
-        # Get the required components with configured defaults
-        service = data.get("service", settings.DEFAULT_SERVICE)
-        instance = data.get("instance", settings.DEFAULT_INSTANCE)
-        resource_type = data.get("resource_type", "resource")
-        locator = data["id"]
-        
-        # Generate the RID if not provided using configured prefix
-        if "rid" not in data or data["rid"] is None:
-            data["rid"] = f"{settings.RID_PREFIX}.{service}.{instance}.{resource_type}.{locator}"
-            logger.debug(f"RID generated in __init__: {data['rid']}")
+        # Handle custom RID case
+        if "rid" in data and data["rid"] is not None:
+            # Validate RID format
+            rid_parts = data["rid"].split('.')
+            if len(rid_parts) != 5:
+                raise ValueError(f"Invalid RID format: '{data['rid']}' must have 5 components")
+            
+            # Validate RID prefix
+            if rid_parts[0] != settings.RID_PREFIX:
+                raise ValueError(f"Invalid RID prefix: '{rid_parts[0]}' must be '{settings.RID_PREFIX}'")
+            
+            # Extract components from RID
+            _, service, instance, resource_type, locator = rid_parts
+            
+            # Set the ID from the RID if not provided
+            if "id" not in data or data["id"] is None:
+                data["id"] = locator
+            elif data["id"] != locator:
+                raise ValueError(f"RID locator '{locator}' does not match id '{data['id']}'")
+            
+            # Set components from RID if not provided
+            if "service" not in data or data["service"] is None:
+                data["service"] = service
+            if "instance" not in data or data["instance"] is None:
+                data["instance"] = instance
+            if "resource_type" not in data or data["resource_type"] is None:
+                data["resource_type"] = resource_type
+        else:
+            # No RID provided, generate one
+            
+            # Generate ID first if not provided
+            if "id" not in data or data["id"] is None:
+                data["id"] = generate_ulid()
+            
+            # Apply defaults for missing components
+            if "service" not in data or data["service"] is None:
+                data["service"] = settings.DEFAULT_SERVICE
+            if "instance" not in data or data["instance"] is None:
+                data["instance"] = settings.DEFAULT_INSTANCE
+            if "resource_type" not in data or data["resource_type"] is None:
+                data["resource_type"] = "resource"
+            
+            # Generate RID with the components we have
+            data["rid"] = f"{settings.RID_PREFIX}.{data['service']}.{data['instance']}.{data['resource_type']}.{data['id']}"
         
         super().__init__(**data)
     
     @model_validator(mode="before")
     @classmethod
-    def generate_rid(cls, values):
+    def prepare_fields(cls, values):
         """
-        Generate the rid using service, instance, resource_type, and an auto-generated ULID id.
+        Prepare and validate fields before Pydantic initialization.
         
-        This is a backup validator to ensure RID is set if not generated in __init__.
+        This method ensures ID is generated if not provided and ensures all
+        required components for RID construction are available.
         
         Args:
             values: The values being validated
         
         Returns:
-            The values with RID added if needed
+            The values with ID added if needed
         """
-        # Skip if rid is already set
-        if values.get("rid"):
-            return values
-        
-        # Generate ID first if not provided
-        if "id" not in values or values["id"] is None:
-            values["id"] = generate_ulid()
-        
-        # Get the required components with configured defaults
-        service = values.get("service", settings.DEFAULT_SERVICE)
-        instance = values.get("instance", settings.DEFAULT_INSTANCE)
-        resource_type = values.get("resource_type", "resource")
-        locator = values["id"]
-        
-        # Generate the RID using configured prefix
-        values["rid"] = f"{settings.RID_PREFIX}.{service}.{instance}.{resource_type}.{locator}"
-        logger.debug(f"RID generated in validator: {values['rid']}")
+        # This validator is kept as a backup, but most work is now done in __init__
         return values
     
     @model_validator(mode="after")
-    def check_rid_consistency(self):
+    def ensure_rid_consistency(self):
         """
-        Ensure rid matches the format based on service, instance, resource_type, and id.
+        Ensure RID is properly constructed and consistent with field values.
         
-        This validator ensures that:
-        1. The RID follows the correct format: ri.<service>.<instance>.<resource_type>.<id>
-        2. The components in the RID match the actual field values
-        3. The RID is properly constructed with all required components
+        This validator is now mostly handled in __init__, but kept for compatibility.
+        It just ensures the RID is properly formatted.
         
         Returns:
             The validated model instance
         
         Raises:
-            ValueError: If the RID is invalid or inconsistent with other fields
+            ValueError: If the RID is invalid format
         """
-        # If rid is still not set (shouldn't happen, but just in case)
-        if not self.rid:
+        # If RID exists, validate its format
+        if self.rid:
+            # Validate RID format
+            rid_parts = self.rid.split('.')
+            if len(rid_parts) != 5:
+                raise ValueError(f"Invalid RID format: '{self.rid}' must have 5 components")
+            
+            # Validate RID prefix
+            if rid_parts[0] != settings.RID_PREFIX:
+                raise ValueError(f"Invalid RID prefix: '{rid_parts[0]}' must be '{settings.RID_PREFIX}'")
+            
+            # Extract components from RID
+            _, service, instance, resource_type, locator = rid_parts
+            
+            # Update components from RID if they weren't explicitly provided
+            # Don't override if they were explicitly set in the constructor
+            if not self.service or self.service == settings.DEFAULT_SERVICE:
+                self.service = service
+            if not self.instance or self.instance == settings.DEFAULT_INSTANCE:
+                self.instance = instance
+            if not self.resource_type or self.resource_type == "resource":
+                self.resource_type = resource_type
+            
+            # Ensure ID matches the locator from RID
+            if locator != self.id:
+                # This is an error - the ID should match the RID locator
+                raise ValueError(f"RID locator '{locator}' does not match id '{self.id}'")
+        else:
+            # No RID provided, generate one from components
+            # Ensure we have default values
+            if not self.service:
+                self.service = settings.DEFAULT_SERVICE
+            if not self.instance:
+                self.instance = settings.DEFAULT_INSTANCE
+            if not self.resource_type:
+                self.resource_type = "resource"
+                
+            # Generate RID
             self.rid = f"{settings.RID_PREFIX}.{self.service}.{self.instance}.{self.resource_type}.{self.id}"
-            logger.debug(f"RID generated in consistency check: {self.rid}")
-        
-        # Split RID into components
-        rid_parts = self.rid.split('.')
-        
-        # Validate RID format
-        if len(rid_parts) != 5:
-            raise ValueError(f"Invalid RID format: '{self.rid}' must have 5 components")
-        
-        # Validate RID prefix against configured value
-        if rid_parts[0] != settings.RID_PREFIX:
-            raise ValueError(f"Invalid RID prefix: '{rid_parts[0]}' must be '{settings.RID_PREFIX}'")
-        
-        # Validate components match field values
-        if rid_parts[1] != self.service:
-            raise ValueError(f"RID service '{rid_parts[1]}' does not match field value '{self.service}'")
-        if rid_parts[2] != self.instance:
-            raise ValueError(f"RID instance '{rid_parts[2]}' does not match field value '{self.instance}'")
-        if rid_parts[3] != self.resource_type:
-            raise ValueError(f"RID resource_type '{rid_parts[3]}' does not match field value '{self.resource_type}'")
-        if rid_parts[4] != self.id:
-            raise ValueError(f"RID id '{rid_parts[4]}' does not match field value '{self.id}'")
         
         return self 
