@@ -36,6 +36,7 @@ from registro.models.patterns import (
     validate_string
 )
 from registro.core.resource import Resource
+from registro.core.global_registry import registry
 from registro.config import settings
 import sqlalchemy.schema
 import logging
@@ -108,10 +109,11 @@ class ResourceBaseModel(ResourceSQLMixin, TimestampedModel, table=False):
     @classmethod
     def __init_subclass__(cls, **kwargs):
         """
-        Register event listeners for all subclasses.
+        Register event listeners for all subclasses and auto-register types.
         
         Ensures that the _create_resource method is called before 
-        instances are inserted into the database.
+        instances are inserted into the database and automatically
+        registers the class in the global type registry.
         
         Args:
             **kwargs: Keyword arguments for the subclass
@@ -121,9 +123,22 @@ class ResourceBaseModel(ResourceSQLMixin, TimestampedModel, table=False):
         """
         super().__init_subclass__(**kwargs)
         
-        # Check that __resource_type__ is set
+        # Check that __resource_type__ is set for table classes
         if cls.__tablename__ is not None and cls.__resource_type__ == "":
             raise ValueError(f"__resource_type__ must be set on {cls.__name__}")
+        
+        # --- NOVA LÓGICA: AUTO-REGISTRO NO GLOBAL REGISTRY ---
+        # Registra a classe no Global Registry se tiver __resource_type__ definido
+        if hasattr(cls, '__resource_type__') and cls.__resource_type__:
+            try:
+                registry.register(cls.__resource_type__, cls)
+                logger.debug(
+                    f"Auto-registered {cls.__name__} as '{cls.__resource_type__}' "
+                    f"in GlobalRegistry"
+                )
+            except ValueError as e:
+                # Log warning if trying to override existing registration
+                logger.warning(f"Failed to auto-register {cls.__name__}: {e}")
         
         # Register event listeners only for mapped (table) classes
         if getattr(cls, "__tablename__", None) is not None:

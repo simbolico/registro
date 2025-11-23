@@ -1,3 +1,26 @@
+## [0.5.0] - 2025-11-23
+### Added
+- **Global Type Registry System**: Catálogo global de tipos para resolução dinâmica de 'nome_do_recurso' -> 'ClassePython'
+- **Auto-Registration**: Classes que herdam de ResourceTypeBaseModel são automaticamente registradas via __init_subclass__
+- **Kernel Integration**: Suporte para que o Kernel (`malha`) possa instanciar objetos dinamicamente apenas pelos RIDs
+- **Enhanced Identity API**: API limpa com funções parse_rid() e get_resource_type_from_rid()
+
+### Features
+- `registro/core/global_registry.py` - Implementação do Singleton Registry com thread-safety
+- `registro/core/identity.py` - API simplificada para RID parsing e geração
+- Auto-registro automático em `registro/core/resource_base.py` via `__init_subclass__`
+- Funções facade para facilitar o uso do registry (register, get, create_instance)
+- Compatibilidade completa com o sistema existente
+
+### Breaking Changes
+- Novas exportações no __init__.py principal (RID, new_rid, parse_rid, registry, etc.)
+
+### Technical Details
+- Implementação de Singleton pattern com thread-safety usando Lock
+- Validação de conflitos de registro com opções de override
+- API para extração de tipo de recurso diretamente do RID
+- Suporte para criação dinâmica de instâncias via registry
+
 ## [0.4.0] - 2025-11-23
 ### Added
 - Centralized identity management with RID type and new_rid() function

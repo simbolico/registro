@@ -12,7 +12,7 @@ Core Components:
 """
 
 # Version
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 # Core exports
 from registro.core.resource_base import ResourceTypeBaseModel
@@ -21,9 +21,22 @@ from registro.core.resource import Resource
 # Decorators
 from registro.decorators import resource
 
+# New Identity & Registry System
+from registro.core.identity import RID, new_rid, parse_rid, get_resource_type_from_rid
+from registro.core.global_registry import registry, register, get, create_instance
+
 # Make isort happy
 __all__ = [
     "ResourceTypeBaseModel",
     "Resource",
     "resource",
+    # Identity & Registry
+    "RID",
+    "new_rid",
+    "parse_rid", 
+    "get_resource_type_from_rid",
+    "registry",
+    "register",
+    "get",
+    "create_instance",
 ]
