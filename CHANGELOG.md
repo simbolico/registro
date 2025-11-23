@@ -11,4 +11,3 @@
 
 ### Notes
 - DB migration required to add meta_tags to resource table.
-
