@@ -55,6 +55,7 @@ class Resource(TimestampedModel, TimeAwareMixin, table=True):
     __tablename__ = "resource"
     
     # Define SQLAlchemy table constraints and indexes for performance optimization
+    # Define SQLAlchemy table constraints and indexes for performance optimization
     __table_args__ = (
         # Composite index for common query patterns (find resources by service+instance)
         sqlalchemy.schema.Index("idx_resource_service_instance", "service", "instance"),
@@ -65,11 +66,19 @@ class Resource(TimestampedModel, TimeAwareMixin, table=True):
         # Full composite index for RID components (excluding the actual ID)
         sqlalchemy.schema.Index("idx_resource_composite", "service", "instance", "resource_type"),
         
-        # Ensure RID uniqueness at the database level
-        sqlalchemy.schema.UniqueConstraint("rid", name="uq_resource_rid"),
-        
         # Ensure ID uniqueness at the database level
-        sqlalchemy.schema.UniqueConstraint("id", name="uq_resource_id")
+        sqlalchemy.schema.UniqueConstraint("id", name="uq_resource_id"),
+
+        # SOTA CONSTRAINT: 
+        # Permite histórico infinito, mas impede dois estados "ativos" simultâneos.
+        sqlalchemy.schema.Index(
+            "uq_resource_rid_active",
+            "rid",
+            unique=True,
+            # Suporte híbrido para Postgres e SQLite
+            postgresql_where=(Column("valid_to") == None),
+            sqlite_where=(Column("valid_to") == None),
+        ),
     )
     
     id: str = Field(
@@ -83,7 +92,7 @@ class Resource(TimestampedModel, TimeAwareMixin, table=True):
     
     rid: str = Field(
         index=True, 
-        unique=True, 
+        unique=False, # Allow duplicates for history (SCD2)
         nullable=False,
         description="Constructed resource identifier (e.g., 'ri.service.instance.type.id'), immutable once set"
     )
@@ -187,9 +196,12 @@ class Resource(TimestampedModel, TimeAwareMixin, table=True):
             
             # Set the ID from the RID if not provided
             if "id" not in data or data["id"] is None:
+                # If ID is not provided, we default to using the RID locator
+                # This maintains backward compatibility for v1 creation
                 data["id"] = locator
-            elif data["id"] != locator:
-                raise ValueError(f"RID locator '{locator}' does not match id '{data['id']}'")
+            # If ID IS provided, we allow it to be different (SCD2 case)
+            # elif data["id"] != locator:
+            #    raise ValueError(f"RID locator '{locator}' does not match id '{data['id']}'")
             
             # Set components from RID if not provided
             if "service" not in data or data["service"] is None:
@@ -264,7 +276,7 @@ class Resource(TimestampedModel, TimeAwareMixin, table=True):
             # Extract components from RID
             _, service, instance, resource_type, locator = rid_parts
             
-            # Update components from RID if they weren't explicitly provided
+            # Set components from RID if they weren't explicitly provided
             # Don't override if they were explicitly set in the constructor
             if not self.service or self.service == settings.DEFAULT_SERVICE:
                 self.service = service
@@ -273,10 +285,9 @@ class Resource(TimestampedModel, TimeAwareMixin, table=True):
             if not self.resource_type or self.resource_type == "resource":
                 self.resource_type = resource_type
             
-            # Ensure ID matches the locator from RID
-            if locator != self.id:
-                # This is an error - the ID should match the RID locator
-                raise ValueError(f"RID locator '{locator}' does not match id '{self.id}'")
+            # We NO LONGER enforce that ID matches RID locator.
+            # In SCD2, RID locator is the Logical ID (stable),
+            # while self.id is the Physical Row ID (changes per version).
         else:
             # No RID provided, generate one from components
             # Ensure we have default values
@@ -287,7 +298,14 @@ class Resource(TimestampedModel, TimeAwareMixin, table=True):
             if not self.resource_type:
                 self.resource_type = "resource"
                 
+            # If ID is not set, generate one
+            if not self.id:
+                self.id = generate_ulid()
+
             # Generate RID
+            # Note: For the first version, we usually use the ID as the locator.
+            # But for subsequent versions, the RID (and its locator) stays the same,
+            # while the ID changes.
             self.rid = f"{settings.RID_PREFIX}.{self.service}.{self.instance}.{self.resource_type}.{self.id}"
         
         return self 
