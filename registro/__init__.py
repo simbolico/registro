@@ -12,11 +12,12 @@ Core Components:
 """
 
 # Version
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 # Core exports
 from registro.core.resource_base import ResourceTypeBaseModel
 from registro.core.resource import Resource
+from registro.core.domain import DomainResource
 
 # Decorators
 from registro.decorators import resource
@@ -29,6 +30,7 @@ from registro.core.global_registry import registry, register, get, create_instan
 __all__ = [
     "ResourceTypeBaseModel",
     "Resource",
+    "DomainResource",
     "resource",
     # Identity & Registry
     "RID",

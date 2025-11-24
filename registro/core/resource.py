@@ -30,7 +30,9 @@ from registro.config import settings
 
 logger = logging.getLogger(__name__)
 
-class Resource(TimestampedModel, table=True):
+from registro.core.temporal import TimeAwareMixin
+
+class Resource(TimestampedModel, TimeAwareMixin, table=True):
     """
     Base model for resources with a ULID id and a constructed rid.
     
@@ -99,6 +101,12 @@ class Resource(TimestampedModel, table=True):
     resource_type: TypeStr = Field(
         index=True,
         description="Type of resource (e.g., 'user'), immutable once set"
+    )
+
+    version: int = Field(
+        default=1,
+        index=True,
+        description="Optimistic Locking Version"
     )
 
     # Arbitrary tags/metadata for governance and indexing
